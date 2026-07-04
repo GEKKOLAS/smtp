@@ -68,6 +68,7 @@ builder.Services.AddRateLimiter(options =>
 
     options.AddPolicy("auth", context => Fixed(context, o => o.Auth));
     options.AddPolicy("oauth", context => Fixed(context, o => o.Oauth));
+    options.AddPolicy("upload", context => Fixed(context, o => o.Upload));
 });
 
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];

@@ -15,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<OAuthToken> OAuthTokens => Set<OAuthToken>();
     public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
     public DbSet<EmailProviderEvent> EmailProviderEvents => Set<EmailProviderEvent>();
+    public DbSet<Asset> Assets => Set<Asset>();
 
     public async Task<IAsyncDisposable> AcquireAdvisoryLockAsync(long key, CancellationToken cancellationToken)
     {

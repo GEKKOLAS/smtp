@@ -1,5 +1,8 @@
+using Amazon.Runtime;
+using Amazon.S3;
 using MailTemplateHub.Application.Abstractions;
 using MailTemplateHub.Application.Abstractions.Oauth;
+using MailTemplateHub.Application.Abstractions.Storage;
 using MailTemplateHub.Application.Common;
 using MailTemplateHub.Infrastructure.Audit;
 using MailTemplateHub.Infrastructure.Email;
@@ -9,6 +12,7 @@ using MailTemplateHub.Infrastructure.Providers;
 using MailTemplateHub.Infrastructure.Providers.Google;
 using MailTemplateHub.Infrastructure.Providers.Microsoft;
 using MailTemplateHub.Infrastructure.Security;
+using MailTemplateHub.Infrastructure.Storage;
 using MailTemplateHub.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -46,8 +50,34 @@ public static class DependencyInjection
         services.AddSingleton<ISystemEmailSender, LoggingSystemEmailSender>();
 
         AddOAuth(services);
+        AddStorage(services);
 
         return services;
+    }
+
+    private static void AddStorage(IServiceCollection services)
+    {
+        services.AddOptions<StorageOptions>()
+            .BindConfiguration(StorageOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddOptions<AssetOptions>().BindConfiguration(AssetOptions.SectionName);
+
+        services.AddSingleton<IAmazonS3>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<StorageOptions>>().Value;
+            var config = new AmazonS3Config
+            {
+                ServiceURL = options.ServiceUrl,
+                ForcePathStyle = options.ForcePathStyle,
+                AuthenticationRegion = options.Region,
+                // Honor the endpoint scheme for presigned URLs (MinIO dev is plain HTTP).
+                UseHttp = options.ServiceUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase),
+            };
+            return new AmazonS3Client(
+                new BasicAWSCredentials(options.AccessKey, options.SecretKey), config);
+        });
+        services.AddScoped<IObjectStorage, S3ObjectStorage>();
     }
 
     private static void AddOAuth(IServiceCollection services)

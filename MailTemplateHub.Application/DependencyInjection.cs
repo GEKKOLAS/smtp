@@ -1,5 +1,6 @@
 using FluentValidation;
 using MailTemplateHub.Application.Features.Accounts;
+using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Application.Features.Auth;
 using MailTemplateHub.Application.Features.Me;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +21,9 @@ public static class DependencyInjection
         services.AddScoped<ConnectStartHandler>();
         services.AddScoped<OAuthCallbackHandler>();
         services.AddScoped<AccountsHandler>();
+        services.AddScoped<RequestUploadHandler>();
+        services.AddScoped<CompleteUploadHandler>();
+        services.AddScoped<AssetsHandler>();
 
         return services;
     }

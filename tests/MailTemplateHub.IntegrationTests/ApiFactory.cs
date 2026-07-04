@@ -1,4 +1,7 @@
 using System.Security.Cryptography;
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Model;
 using MailTemplateHub.Application.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -6,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
-using Microsoft.Extensions.Options;
+using Testcontainers.Minio;
 using Testcontainers.PostgreSql;
 
 namespace MailTemplateHub.IntegrationTests;
@@ -26,6 +29,16 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .WithPassword("mth_test_password")
         .Build();
 
+    private readonly MinioContainer _minio = new MinioBuilder()
+        .WithImage("minio/minio:latest")
+        .WithUsername("minioadmin")
+        .WithPassword("minioadmin")
+        .Build();
+
+    private const string PublicBucket = "mth-public";
+    private const string PrivateBucket = "mth-private";
+    private const string SnapshotsBucket = "mth-snapshots";
+
     // Deterministic 32-byte KEK for the test process only.
     private static readonly string TestKek = Convert.ToBase64String(
         SHA256.HashData("mth-integration-test-kek"u8.ToArray()));
@@ -33,13 +46,35 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public RecordingEmailSender EmailSender { get; } = new();
     public StubOAuthHandler OAuth { get; } = new();
 
-    Task IAsyncLifetime.InitializeAsync() => _postgres.StartAsync();
+    // Build an explicit http URL; a bare host:port makes the S3 SDK assume https,
+    // which fails against MinIO's plain-HTTP endpoint.
+    private string MinioEndpoint => $"http://{_minio.Hostname}:{_minio.GetMappedPublicPort(9000)}";
+
+    async Task IAsyncLifetime.InitializeAsync()
+    {
+        await Task.WhenAll(_postgres.StartAsync(), _minio.StartAsync());
+        await CreateBucketsAsync();
+    }
 
     async Task IAsyncLifetime.DisposeAsync()
     {
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
+        await _minio.DisposeAsync();
     }
+
+    private async Task CreateBucketsAsync()
+    {
+        using var s3 = CreateS3Client();
+        foreach (var bucket in new[] { PrivateBucket, PublicBucket, SnapshotsBucket })
+        {
+            await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucket });
+        }
+    }
+
+    public IAmazonS3 CreateS3Client() => new AmazonS3Client(
+        new BasicAWSCredentials("minioadmin", "minioadmin"),
+        new AmazonS3Config { ServiceURL = MinioEndpoint, ForcePathStyle = true, UseHttp = true });
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -78,6 +113,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["OAuth:Microsoft:Scopes:1"] = "offline_access",
                 ["OAuth:Microsoft:Scopes:2"] = "User.Read",
                 ["OAuth:Microsoft:Scopes:3"] = "Mail.Send",
+
+                ["Storage:ServiceUrl"] = MinioEndpoint,
+                ["Storage:AccessKey"] = "minioadmin",
+                ["Storage:SecretKey"] = "minioadmin",
+                ["Storage:PublicBaseUrl"] = $"{MinioEndpoint}/{PublicBucket}",
             }));
 
         builder.ConfigureServices(services =>

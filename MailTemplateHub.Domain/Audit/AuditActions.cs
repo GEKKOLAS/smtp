@@ -16,4 +16,8 @@ public static class AuditActions
     public const string AccountDefaultChanged = "account.default_changed";
     public const string OAuthStateRejected = "oauth.state_rejected";
     public const string TokenRefreshFailed = "token.refresh_failed";
+
+    public const string AssetUploaded = "asset.uploaded";
+    public const string AssetDeleted = "asset.deleted";
+    public const string AssetRejected = "asset.rejected";
 }

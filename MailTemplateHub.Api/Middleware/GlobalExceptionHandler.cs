@@ -1,5 +1,6 @@
 using FluentValidation;
 using MailTemplateHub.Application.Common;
+using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Domain.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,7 @@ internal sealed class GlobalExceptionHandler(
         var (status, title, errorCode) = exception switch
         {
             ValidationException => (StatusCodes.Status422UnprocessableEntity, "Validation failed.", "validation_failed"),
+            UnprocessableAssetException asset => (StatusCodes.Status422UnprocessableEntity, asset.Message, asset.Code),
             NotFoundException notFound => (StatusCodes.Status404NotFound, notFound.Message, notFound.Code),
             UnauthorizedAppException unauthorized => (StatusCodes.Status401Unauthorized, unauthorized.Message, unauthorized.Code),
             ConflictException conflict => (StatusCodes.Status409Conflict, conflict.Message, conflict.Code),

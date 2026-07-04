@@ -6,6 +6,7 @@ public sealed class RateLimitingOptions
 
     public PolicyOptions Auth { get; init; } = new() { PermitLimit = 10, WindowMinutes = 15 };
     public PolicyOptions Oauth { get; init; } = new() { PermitLimit = 10, WindowMinutes = 10 };
+    public PolicyOptions Upload { get; init; } = new() { PermitLimit = 60, WindowMinutes = 60 };
 
     public sealed class PolicyOptions
     {
