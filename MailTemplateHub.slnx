@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/MailTemplateHub.ArchitectureTests/MailTemplateHub.ArchitectureTests.csproj" />
+    <Project Path="tests/MailTemplateHub.IntegrationTests/MailTemplateHub.IntegrationTests.csproj" />
+    <Project Path="tests/MailTemplateHub.UnitTests/MailTemplateHub.UnitTests.csproj" />
+  </Folder>
+  <Project Path="MailTemplateHub.Api/MailTemplateHub.Api.csproj" />
+  <Project Path="MailTemplateHub.Application/MailTemplateHub.Application.csproj" />
+  <Project Path="MailTemplateHub.Domain/MailTemplateHub.Domain.csproj" />
+  <Project Path="MailTemplateHub.Infrastructure/MailTemplateHub.Infrastructure.csproj" />
+</Solution>
