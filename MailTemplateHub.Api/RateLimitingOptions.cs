@@ -4,7 +4,8 @@ public sealed class RateLimitingOptions
 {
     public const string SectionName = "RateLimiting";
 
-    public PolicyOptions Auth { get; init; } = new();
+    public PolicyOptions Auth { get; init; } = new() { PermitLimit = 10, WindowMinutes = 15 };
+    public PolicyOptions Oauth { get; init; } = new() { PermitLimit = 10, WindowMinutes = 10 };
 
     public sealed class PolicyOptions
     {

@@ -1,8 +1,11 @@
 "use client";
 
+import { listAccounts } from "@/lib/api/accounts";
 import { useSession } from "@/lib/hooks/use-session";
+import { queryKeys } from "@/lib/query/query-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
 const CHECKLIST = [
@@ -28,6 +31,9 @@ const CHECKLIST = [
 
 export default function DashboardPage() {
   const { data: user } = useSession();
+  const { data: accounts } = useQuery({ queryKey: queryKeys.accounts, queryFn: listAccounts });
+
+  const needsReconnect = accounts?.filter((a) => a.state === "needs_reconnect") ?? [];
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -37,6 +43,24 @@ export default function DashboardPage() {
         </h1>
         <p className="text-muted-foreground">Get set up in three steps.</p>
       </header>
+
+      {needsReconnect.length > 0 && (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-base text-destructive">Action needed</CardTitle>
+            <CardDescription>
+              {needsReconnect.length === 1
+                ? "One connected account needs to be reconnected before it can send."
+                : `${needsReconnect.length} connected accounts need to be reconnected.`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/accounts">Review accounts</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         {CHECKLIST.map((step, index) => (

@@ -10,4 +10,10 @@ public static class AuditActions
     public const string PasswordReset = "auth.password_reset";
     public const string PasswordChanged = "auth.password_changed";
     public const string SessionRevoked = "auth.session_revoked";
+
+    public const string AccountConnected = "account.connected";
+    public const string AccountDisconnected = "account.disconnected";
+    public const string AccountDefaultChanged = "account.default_changed";
+    public const string OAuthStateRejected = "oauth.state_rejected";
+    public const string TokenRefreshFailed = "token.refresh_failed";
 }

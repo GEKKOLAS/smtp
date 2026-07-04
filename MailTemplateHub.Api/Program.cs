@@ -50,10 +50,12 @@ builder.Services.AddOptions<RateLimitingOptions>().BindConfiguration(RateLimitin
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("auth", context =>
+
+    static RateLimitPartition<string> Fixed(
+        HttpContext context, Func<RateLimitingOptions, RateLimitingOptions.PolicyOptions> select)
     {
-        var policy = context.RequestServices
-            .GetRequiredService<IOptionsMonitor<RateLimitingOptions>>().CurrentValue.Auth;
+        var policy = select(context.RequestServices
+            .GetRequiredService<IOptionsMonitor<RateLimitingOptions>>().CurrentValue);
         return RateLimitPartition.GetFixedWindowLimiter(
             context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             _ => new FixedWindowRateLimiterOptions
@@ -62,7 +64,10 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(policy.WindowMinutes),
                 QueueLimit = 0,
             });
-    });
+    }
+
+    options.AddPolicy("auth", context => Fixed(context, o => o.Auth));
+    options.AddPolicy("oauth", context => Fixed(context, o => o.Oauth));
 });
 
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];

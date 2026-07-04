@@ -1,8 +1,13 @@
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Application.Abstractions.Oauth;
+using MailTemplateHub.Application.Common;
 using MailTemplateHub.Infrastructure.Audit;
 using MailTemplateHub.Infrastructure.Email;
 using MailTemplateHub.Infrastructure.Persistence;
 using MailTemplateHub.Infrastructure.Persistence.Interceptors;
+using MailTemplateHub.Infrastructure.Providers;
+using MailTemplateHub.Infrastructure.Providers.Google;
+using MailTemplateHub.Infrastructure.Providers.Microsoft;
 using MailTemplateHub.Infrastructure.Security;
 using MailTemplateHub.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +45,28 @@ public static class DependencyInjection
         services.AddScoped<IAuditWriter, AuditWriter>();
         services.AddSingleton<ISystemEmailSender, LoggingSystemEmailSender>();
 
+        AddOAuth(services);
+
         return services;
+    }
+
+    private static void AddOAuth(IServiceCollection services)
+    {
+        services.AddOptions<OAuthGeneralOptions>().BindConfiguration(OAuthGeneralOptions.SectionName);
+        services.AddOptions<GoogleOAuthOptions>().BindConfiguration(GoogleOAuthOptions.SectionName);
+        services.AddOptions<MicrosoftOAuthOptions>().BindConfiguration(MicrosoftOAuthOptions.SectionName);
+        services.AddOptions<TokenCryptoOptions>()
+            .BindConfiguration(TokenCryptoOptions.SectionName)
+            .ValidateOnStart();
+
+        services.AddSingleton<ITokenCipher, AesGcmTokenCipher>();
+
+        services.AddHttpClient<GoogleOAuthService>();
+        services.AddHttpClient<MicrosoftOAuthService>();
+        services.AddScoped<IOAuthProviderService>(sp => sp.GetRequiredService<GoogleOAuthService>());
+        services.AddScoped<IOAuthProviderService>(sp => sp.GetRequiredService<MicrosoftOAuthService>());
+        services.AddScoped<IOAuthProviderResolver, OAuthProviderResolver>();
+
+        services.AddScoped<ITokenRefreshService, TokenRefreshService>();
     }
 }

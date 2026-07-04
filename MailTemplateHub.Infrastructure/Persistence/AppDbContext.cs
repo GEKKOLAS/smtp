@@ -11,6 +11,42 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ConnectedEmailAccount> ConnectedEmailAccounts => Set<ConnectedEmailAccount>();
+    public DbSet<OAuthToken> OAuthTokens => Set<OAuthToken>();
+    public DbSet<OAuthState> OAuthStates => Set<OAuthState>();
+    public DbSet<EmailProviderEvent> EmailProviderEvents => Set<EmailProviderEvent>();
+
+    public async Task<IAsyncDisposable> AcquireAdvisoryLockAsync(long key, CancellationToken cancellationToken)
+    {
+        // Hold the connection open so the session-level lock persists across the
+        // subsequent re-read + refresh + save (spec 04 §2).
+        await Database.OpenConnectionAsync(cancellationToken);
+        try
+        {
+            await Database.ExecuteSqlAsync($"SELECT pg_advisory_lock({key})", cancellationToken);
+        }
+        catch
+        {
+            await Database.CloseConnectionAsync();
+            throw;
+        }
+        return new AdvisoryLockHandle(this, key);
+    }
+
+    private sealed class AdvisoryLockHandle(AppDbContext context, long key) : IAsyncDisposable
+    {
+        public async ValueTask DisposeAsync()
+        {
+            try
+            {
+                await context.Database.ExecuteSqlAsync($"SELECT pg_advisory_unlock({key})", CancellationToken.None);
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
+            }
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

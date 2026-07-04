@@ -13,6 +13,17 @@ public interface IAppDbContext
     DbSet<UserSession> UserSessions { get; }
     DbSet<PasswordResetToken> PasswordResetTokens { get; }
     DbSet<AuditLog> AuditLogs { get; }
+    DbSet<ConnectedEmailAccount> ConnectedEmailAccounts { get; }
+    DbSet<OAuthToken> OAuthTokens { get; }
+    DbSet<OAuthState> OAuthStates { get; }
+    DbSet<EmailProviderEvent> EmailProviderEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Postgres session-level advisory lock keyed on an account, serializing
+    /// concurrent token refreshes across instances (spec 04 §2). The returned
+    /// handle keeps the connection open and releases the lock when disposed.
+    /// </summary>
+    Task<IAsyncDisposable> AcquireAdvisoryLockAsync(long key, CancellationToken cancellationToken);
 }
