@@ -1,4 +1,6 @@
 using FluentValidation;
+using MailTemplateHub.Application.Features.Auth;
+using MailTemplateHub.Application.Features.Me;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MailTemplateHub.Application;
@@ -8,6 +10,13 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
+
+        services.AddScoped<RegisterHandler>();
+        services.AddScoped<LoginHandler>();
+        services.AddScoped<SessionsHandler>();
+        services.AddScoped<PasswordResetHandler>();
+        services.AddScoped<MeHandler>();
+
         return services;
     }
 }

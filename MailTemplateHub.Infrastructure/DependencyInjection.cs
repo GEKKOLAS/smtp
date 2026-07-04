@@ -1,6 +1,9 @@
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Infrastructure.Audit;
+using MailTemplateHub.Infrastructure.Email;
 using MailTemplateHub.Infrastructure.Persistence;
 using MailTemplateHub.Infrastructure.Persistence.Interceptors;
+using MailTemplateHub.Infrastructure.Security;
 using MailTemplateHub.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +35,10 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+        services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
+        services.AddScoped<IAuditWriter, AuditWriter>();
+        services.AddSingleton<ISystemEmailSender, LoggingSystemEmailSender>();
 
         return services;
     }

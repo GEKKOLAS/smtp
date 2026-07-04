@@ -1,6 +1,9 @@
+using MailTemplateHub.Application.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 
 namespace MailTemplateHub.IntegrationTests;
@@ -20,6 +23,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         .WithPassword("mth_test_password")
         .Build();
 
+    public RecordingEmailSender EmailSender { get; } = new();
+
     Task IAsyncLifetime.InitializeAsync() => _postgres.StartAsync();
 
     async Task IAsyncLifetime.DisposeAsync()
@@ -35,6 +40,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 ["Database:ConnectionString"] = _postgres.GetConnectionString(),
                 ["Database:ApplyMigrationsOnStartup"] = "true",
+                // Generous default so unrelated tests never trip the limiter;
+                // the rate-limit test lowers it via WithWebHostBuilder.
+                ["RateLimiting:Auth:PermitLimit"] = "1000",
             }));
+
+        builder.ConfigureServices(services =>
+        {
+            services.RemoveAll<ISystemEmailSender>();
+            services.AddSingleton<ISystemEmailSender>(EmailSender);
+        });
     }
 }

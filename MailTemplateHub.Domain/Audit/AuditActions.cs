@@ -1,0 +1,13 @@
+namespace MailTemplateHub.Domain.Audit;
+
+/// <summary>Audit action codes (spec 04-security.md §7). Stored as text.</summary>
+public static class AuditActions
+{
+    public const string Register = "auth.register";
+    public const string Login = "auth.login";
+    public const string LoginFailed = "auth.login_failed";
+    public const string Logout = "auth.logout";
+    public const string PasswordReset = "auth.password_reset";
+    public const string PasswordChanged = "auth.password_changed";
+    public const string SessionRevoked = "auth.session_revoked";
+}

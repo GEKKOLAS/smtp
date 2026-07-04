@@ -1,3 +1,5 @@
+using FluentValidation;
+using MailTemplateHub.Application.Common;
 using MailTemplateHub.Domain.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +19,10 @@ internal sealed class GlobalExceptionHandler(
     {
         var (status, title, errorCode) = exception switch
         {
+            ValidationException => (StatusCodes.Status422UnprocessableEntity, "Validation failed.", "validation_failed"),
+            NotFoundException notFound => (StatusCodes.Status404NotFound, notFound.Message, notFound.Code),
+            UnauthorizedAppException unauthorized => (StatusCodes.Status401Unauthorized, unauthorized.Message, unauthorized.Code),
+            ConflictException conflict => (StatusCodes.Status409Conflict, conflict.Message, conflict.Code),
             DomainException domain => (StatusCodes.Status400BadRequest, domain.Message, domain.Code),
             OperationCanceledException => (StatusCodes.Status499ClientClosedRequest, "Request cancelled.", "request_cancelled"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", "internal_error"),
@@ -28,21 +34,32 @@ internal sealed class GlobalExceptionHandler(
                 httpContext.Request.Method, httpContext.Request.Path);
         }
 
+        var problemDetails = new ProblemDetails
+        {
+            Status = status,
+            Title = title,
+            Extensions =
+            {
+                ["errorCode"] = errorCode,
+                ["traceId"] = httpContext.TraceIdentifier,
+            },
+        };
+
+        if (exception is ValidationException validation)
+        {
+            problemDetails.Extensions["errors"] = validation.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(
+                    g => System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(g.Key),
+                    g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+        }
+
         httpContext.Response.StatusCode = status;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
             Exception = exception,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = status,
-                Title = title,
-                Extensions =
-                {
-                    ["errorCode"] = errorCode,
-                    ["traceId"] = httpContext.TraceIdentifier,
-                },
-            },
+            ProblemDetails = problemDetails,
         });
     }
 }
