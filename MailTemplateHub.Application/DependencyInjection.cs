@@ -4,6 +4,7 @@ using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Application.Features.Auth;
 using MailTemplateHub.Application.Features.Me;
 using MailTemplateHub.Application.Features.Rendering;
+using MailTemplateHub.Application.Features.Sends;
 using MailTemplateHub.Application.Features.Templates;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +31,9 @@ public static class DependencyInjection
         services.AddScoped<TemplatesHandler>();
         services.AddScoped<TemplateVersionsHandler>();
         services.AddScoped<RenderHandler>();
+        services.AddScoped<CreateSendJobHandler>();
+        services.AddScoped<TestSendHandler>();
+        services.AddScoped<SendJobsHandler>();
 
         return services;
     }

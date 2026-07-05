@@ -71,6 +71,18 @@ internal sealed class S3ObjectStorage(IAmazonS3 s3, IOptions<StorageOptions> opt
         return response.ResponseStream;
     }
 
+    public async Task PutAsync(string bucket, string key, byte[] content, string contentType, CancellationToken ct)
+    {
+        using var stream = new MemoryStream(content);
+        await s3.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = bucket,
+            Key = key,
+            InputStream = stream,
+            ContentType = contentType,
+        }, ct);
+    }
+
     public async Task CopyAsync(
         string sourceBucket, string sourceKey, string destBucket, string destKey, CancellationToken ct)
     {

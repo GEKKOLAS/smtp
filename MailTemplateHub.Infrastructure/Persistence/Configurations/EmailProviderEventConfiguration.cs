@@ -15,6 +15,7 @@ public sealed class EmailProviderEventConfiguration : IEntityTypeConfiguration<E
         builder.Property(e => e.Detail).HasColumnType("jsonb");
 
         builder.HasIndex(e => new { e.ConnectedEmailAccountId, e.CreatedAt });
+        builder.HasIndex(e => new { e.SendJobId, e.CreatedAt });
 
         // Append-only; keep events even if the account row is later removed.
         builder.HasOne<ConnectedEmailAccount>()

@@ -2,6 +2,7 @@ using FluentValidation;
 using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Common;
 using MailTemplateHub.Application.Features.Assets;
+using MailTemplateHub.Application.Features.Sends;
 using MailTemplateHub.Domain.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -67,6 +68,13 @@ internal sealed class GlobalExceptionHandler(
                 break;
             case AssetInUseException inUse:
                 problemDetails.Extensions["usages"] = inUse.Usages;
+                break;
+            case MissingRecipientVariablesException missingRecipient:
+                problemDetails.Extensions["recipients"] = missingRecipient.PerRecipient;
+                break;
+            case SendTooLargeException tooLarge:
+                problemDetails.Extensions["actualBytes"] = tooLarge.ActualBytes;
+                problemDetails.Extensions["maxBytes"] = tooLarge.MaxBytes;
                 break;
         }
 

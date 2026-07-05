@@ -3,6 +3,8 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Application.Abstractions.Email;
+using MailTemplateHub.Application.Abstractions.Jobs;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -45,6 +47,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public RecordingEmailSender EmailSender { get; } = new();
     public StubOAuthHandler OAuth { get; } = new();
+    public FakeEmailProviderClient Provider { get; } = new();
 
     // Build an explicit http URL; a bare host:port makes the S3 SDK assume https,
     // which fails against MinIO's plain-HTTP endpoint.
@@ -78,6 +81,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Read at build time in Program.cs, so it must be set as a host setting
+        // (the in-memory config below is only merged for post-build option reads).
+        builder.UseSetting("Jobs:RunInProcess", "false");
+
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -118,6 +125,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["Storage:AccessKey"] = "minioadmin",
                 ["Storage:SecretKey"] = "minioadmin",
                 ["Storage:PublicBaseUrl"] = $"{MinioEndpoint}/{PublicBucket}",
+
+                // Run send jobs synchronously in-process; no Hangfire server.
+                ["Jobs:RunInProcess"] = "false",
             }));
 
         builder.ConfigureServices(services =>
@@ -131,6 +141,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Configure<HttpClientFactoryOptions>(clientName, options =>
                     options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = OAuth));
             }
+
+            // Send through the in-process fake provider and run jobs synchronously.
+            services.RemoveAll<IEmailProviderClientFactory>();
+            services.AddSingleton(Provider);
+            services.AddSingleton<IEmailProviderClientFactory>(new FakeProviderClientFactory(Provider));
+            services.RemoveAll<IBackgroundJobScheduler>();
+            services.AddScoped<IBackgroundJobScheduler, SynchronousJobScheduler>();
         });
     }
 }

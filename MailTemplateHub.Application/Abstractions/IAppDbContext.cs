@@ -21,6 +21,9 @@ public interface IAppDbContext
     DbSet<EmailTemplate> EmailTemplates { get; }
     DbSet<EmailTemplateVersion> EmailTemplateVersions { get; }
     DbSet<TemplateAsset> TemplateAssets { get; }
+    DbSet<EmailSendJob> EmailSendJobs { get; }
+    DbSet<EmailSendRecipient> EmailSendRecipients { get; }
+    DbSet<EmailSendAttachment> EmailSendAttachments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

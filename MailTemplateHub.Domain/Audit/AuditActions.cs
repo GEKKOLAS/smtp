@@ -28,4 +28,11 @@ public static class AuditActions
     public const string TemplateArchived = "template.archived";
     public const string TemplateDeleted = "template.deleted";
     public const string TemplateRestored = "template.restored";
+
+    public const string SendCreated = "send.created";
+    public const string SendScheduled = "send.scheduled";
+    public const string SendCancelled = "send.cancelled";
+    public const string SendRetried = "send.retried";
+    public const string SendCompleted = "send.completed";
+    public const string SendFailed = "send.failed";
 }

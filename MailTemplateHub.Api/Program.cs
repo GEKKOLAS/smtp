@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Hangfire;
 using MailTemplateHub.Api;
 using MailTemplateHub.Api.Auth;
 using MailTemplateHub.Api.Middleware;
@@ -6,6 +7,7 @@ using MailTemplateHub.Application;
 using MailTemplateHub.Application.Abstractions;
 using MailTemplateHub.Application.Common;
 using MailTemplateHub.Infrastructure;
+using MailTemplateHub.Infrastructure.Jobs;
 using MailTemplateHub.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.RateLimiting;
@@ -70,6 +72,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("oauth", context => Fixed(context, o => o.Oauth));
     options.AddPolicy("upload", context => Fixed(context, o => o.Upload));
     options.AddPolicy("render", context => Fixed(context, o => o.Render));
+    options.AddPolicy("send", context => Fixed(context, o => o.Send));
 });
 
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];
@@ -85,6 +88,12 @@ builder.Services.AddOpenTelemetry()
             tracing.AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
         }
     });
+
+var jobsRunInProcess = builder.Configuration.GetValue("Jobs:RunInProcess", true);
+if (jobsRunInProcess)
+{
+    builder.Services.AddHangfireServer(options => options.Queues = ["default"]);
+}
 
 var app = builder.Build();
 
@@ -111,6 +120,13 @@ using (var scope = app.Services.CreateScope())
     {
         await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
     }
+}
+
+// Recurring background jobs (spec 10-jobs.md); Hangfire tables are created by the server.
+if (jobsRunInProcess)
+{
+    RecurringJob.AddOrUpdate<PromoteScheduledSendsJob>(
+        "promote-scheduled", job => job.RunAsync(CancellationToken.None), "* * * * *");
 }
 
 await app.RunAsync();

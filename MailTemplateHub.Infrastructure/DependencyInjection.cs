@@ -1,6 +1,10 @@
 using Amazon.Runtime;
 using Amazon.S3;
+using Hangfire;
+using Hangfire.PostgreSql;
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Application.Abstractions.Email;
+using MailTemplateHub.Application.Abstractions.Jobs;
 using MailTemplateHub.Application.Abstractions.Oauth;
 using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Abstractions.Storage;
@@ -8,12 +12,14 @@ using MailTemplateHub.Application.Common;
 using MailTemplateHub.Infrastructure.Rendering;
 using MailTemplateHub.Infrastructure.Audit;
 using MailTemplateHub.Infrastructure.Email;
+using MailTemplateHub.Infrastructure.Jobs;
 using MailTemplateHub.Infrastructure.Persistence;
 using MailTemplateHub.Infrastructure.Persistence.Interceptors;
 using MailTemplateHub.Infrastructure.Providers;
 using MailTemplateHub.Infrastructure.Providers.Google;
 using MailTemplateHub.Infrastructure.Providers.Microsoft;
 using MailTemplateHub.Infrastructure.Security;
+using MailTemplateHub.Infrastructure.Sending;
 using MailTemplateHub.Infrastructure.Storage;
 using MailTemplateHub.Infrastructure.Time;
 using Microsoft.EntityFrameworkCore;
@@ -58,7 +64,37 @@ public static class DependencyInjection
         services.AddSingleton<IHtmlSanitizer, GanssHtmlSanitizer>();
         services.AddSingleton<ITemplateRenderer, TemplateRenderer>();
 
+        AddSending(services, configuration);
+
         return services;
+    }
+
+    private static void AddSending(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<SendLimitsOptions>().BindConfiguration(SendLimitsOptions.SectionName);
+
+        services.AddSingleton<IEmailMessageBuilder, MimeKitEmailMessageBuilder>();
+        services.AddHttpClient<GmailEmailProviderClient>();
+        services.AddHttpClient<OutlookEmailProviderClient>();
+        services.AddScoped<IEmailProviderClient>(sp => sp.GetRequiredService<GmailEmailProviderClient>());
+        services.AddScoped<IEmailProviderClient>(sp => sp.GetRequiredService<OutlookEmailProviderClient>());
+        services.AddScoped<IEmailProviderClientFactory, EmailProviderClientFactory>();
+        services.AddScoped<IEmailSendService, EmailSendService>();
+        services.AddScoped<SendEmailJob>();
+        services.AddScoped<PromoteScheduledSendsJob>();
+
+        // Hangfire hosts the queue in-process (dev/prod). Tests set RunInProcess=false
+        // and substitute a synchronous IBackgroundJobScheduler.
+        if (configuration.GetValue("Jobs:RunInProcess", true))
+        {
+            var connectionString = configuration["Database:ConnectionString"];
+            services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+            services.AddScoped<IBackgroundJobScheduler, HangfireJobScheduler>();
+        }
     }
 
     private static void AddStorage(IServiceCollection services)

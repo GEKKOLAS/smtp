@@ -19,13 +19,14 @@ public sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
             ? id
             : throw new InvalidOperationException("Caller is not authenticated.");
 
-    public string? Ip => Context.Connection.RemoteIpAddress?.ToString();
+    // Null in background jobs (no HTTP context), so audit writes still work there.
+    public string? Ip => accessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
 
     public string? UserAgent
     {
         get
         {
-            var value = Context.Request.Headers.UserAgent.ToString();
+            var value = accessor.HttpContext?.Request.Headers.UserAgent.ToString();
             return string.IsNullOrEmpty(value) ? null : value[..Math.Min(value.Length, 500)];
         }
     }

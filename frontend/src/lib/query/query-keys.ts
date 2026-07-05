@@ -8,4 +8,6 @@ export const queryKeys = {
     ["templates", params?.search ?? "", params?.archived ?? false] as const,
   template: (id: string) => ["template", id] as const,
   templateVersions: (id: string) => ["template-versions", id] as const,
+  sends: (status?: string) => ["sends", status ?? "all"] as const,
+  send: (id: string) => ["send", id] as const,
 };

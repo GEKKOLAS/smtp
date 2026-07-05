@@ -19,6 +19,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
     public DbSet<EmailTemplateVersion> EmailTemplateVersions => Set<EmailTemplateVersion>();
     public DbSet<TemplateAsset> TemplateAssets => Set<TemplateAsset>();
+    public DbSet<EmailSendJob> EmailSendJobs => Set<EmailSendJob>();
+    public DbSet<EmailSendRecipient> EmailSendRecipients => Set<EmailSendRecipient>();
+    public DbSet<EmailSendAttachment> EmailSendAttachments => Set<EmailSendAttachment>();
 
     public async Task<IAsyncDisposable> AcquireAdvisoryLockAsync(long key, CancellationToken cancellationToken)
     {

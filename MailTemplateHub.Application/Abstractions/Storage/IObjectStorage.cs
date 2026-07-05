@@ -22,6 +22,9 @@ public interface IObjectStorage
     /// <summary>Opens the object for reading (used to verify magic bytes and checksum).</summary>
     Task<Stream> OpenReadAsync(string bucket, string key, CancellationToken ct);
 
+    /// <summary>Writes bytes directly from the server (e.g. rendered snapshots).</summary>
+    Task PutAsync(string bucket, string key, byte[] content, string contentType, CancellationToken ct);
+
     Task CopyAsync(string sourceBucket, string sourceKey, string destBucket, string destKey, CancellationToken ct);
 
     Task DeleteAsync(string bucket, string key, CancellationToken ct);
