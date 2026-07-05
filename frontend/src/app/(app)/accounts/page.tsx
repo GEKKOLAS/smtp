@@ -9,10 +9,18 @@ import { ConnectButtons } from "@/components/accounts/connect-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function AccountsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AccountsInner />
+    </Suspense>
+  );
+}
+
+function AccountsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: accounts, isLoading, isError } = useQuery({

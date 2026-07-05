@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 
 function RequestResetForm() {
@@ -163,7 +163,15 @@ function ConfirmResetForm({ token }: { token: string }) {
   );
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const token = useSearchParams().get("token");
   return token ? <ConfirmResetForm token={token} /> : <RequestResetForm />;
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordInner />
+    </Suspense>
+  );
 }
