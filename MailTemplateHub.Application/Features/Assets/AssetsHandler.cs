@@ -106,9 +106,26 @@ public sealed class AssetsHandler(
             .FirstOrDefaultAsync(a => a.Id == id && a.UserId == currentUser.UserId, ct)
             ?? throw new NotFoundException();
 
-        // In-use checking against template/version references is added in Phase 4,
-        // where those tables exist; `force` is already accepted here.
-        _ = force;
+        // Block deletion of an asset still referenced by a live template version,
+        // unless the caller forces it (spec 06 §7).
+        if (!force)
+        {
+            var usages = await db.TemplateAssets
+                .Where(ta => ta.AssetId == id
+                             && db.EmailTemplateVersions.Any(v =>
+                                 v.Id == ta.TemplateVersionId && v.Template!.DeletedAt == null))
+                .Select(ta => new AssetUsageDto(
+                    ta.TemplateVersionId,
+                    db.EmailTemplateVersions
+                        .Where(v => v.Id == ta.TemplateVersionId)
+                        .Select(v => v.Template!.Name).First(),
+                    db.EmailTemplateVersions
+                        .Where(v => v.Id == ta.TemplateVersionId)
+                        .Select(v => v.VersionNumber).First()))
+                .Distinct()
+                .ToListAsync(ct);
+            if (usages.Count > 0) throw new AssetInUseException(usages);
+        }
 
         var options = storageOptions.Value;
         await storage.DeleteAsync(options.PrivateBucket, asset.StorageKey, ct);
@@ -126,4 +143,11 @@ public sealed class AssetsHandler(
         await db.Assets.FirstOrDefaultAsync(
             a => a.Id == id && a.UserId == currentUser.UserId && a.UploadState == AssetUploadState.Ready, ct)
         ?? throw new NotFoundException();
+}
+
+/// <summary>Asset still referenced by a template version (maps to 409 with usages).</summary>
+public sealed class AssetInUseException(IReadOnlyList<AssetUsageDto> usages)
+    : ConflictException("asset.in_use", "This asset is used by one or more templates.")
+{
+    public IReadOnlyList<AssetUsageDto> Usages { get; } = usages;
 }

@@ -13,5 +13,5 @@ public sealed class NotFoundException(string code = "not_found", string message 
 public sealed class UnauthorizedAppException(string code, string message)
     : AppException(code, message);
 
-public sealed class ConflictException(string code, string message)
+public class ConflictException(string code, string message)
     : AppException(code, message);

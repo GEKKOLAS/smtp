@@ -18,6 +18,9 @@ public interface IAppDbContext
     DbSet<OAuthState> OAuthStates { get; }
     DbSet<EmailProviderEvent> EmailProviderEvents { get; }
     DbSet<Asset> Assets { get; }
+    DbSet<EmailTemplate> EmailTemplates { get; }
+    DbSet<EmailTemplateVersion> EmailTemplateVersions { get; }
+    DbSet<TemplateAsset> TemplateAssets { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

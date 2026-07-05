@@ -2,8 +2,10 @@ using Amazon.Runtime;
 using Amazon.S3;
 using MailTemplateHub.Application.Abstractions;
 using MailTemplateHub.Application.Abstractions.Oauth;
+using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Abstractions.Storage;
 using MailTemplateHub.Application.Common;
+using MailTemplateHub.Infrastructure.Rendering;
 using MailTemplateHub.Infrastructure.Audit;
 using MailTemplateHub.Infrastructure.Email;
 using MailTemplateHub.Infrastructure.Persistence;
@@ -51,6 +53,10 @@ public static class DependencyInjection
 
         AddOAuth(services);
         AddStorage(services);
+
+        services.AddSingleton<IMjmlCompiler, MjmlNetCompiler>();
+        services.AddSingleton<IHtmlSanitizer, GanssHtmlSanitizer>();
+        services.AddSingleton<ITemplateRenderer, TemplateRenderer>();
 
         return services;
     }

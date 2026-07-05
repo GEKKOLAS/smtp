@@ -197,6 +197,42 @@ public class AssetsTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Asset_used_by_a_template_cannot_be_deleted_without_force()
+    {
+        var session = await RegisteredSessionAsync();
+        var (_, asset) = await UploadAsync(session, "inuse.png", "image/png", TestFiles.Png);
+        var assetId = asset.GetProperty("id").GetString()!;
+
+        // Create a template referencing the asset as a hosted image.
+        var content = new
+        {
+            editorKind = "html",
+            subject = "s",
+            preheader = (string?)null,
+            mjmlSource = (string?)null,
+            grapesProject = (object?)null,
+            htmlBody = $"<img src=\"mth-asset://{assetId}\" alt=\"x\">",
+            textBody = (string?)null,
+            variables = Array.Empty<object>(),
+            assets = new[] { new { assetId, usage = "hosted_image", contentId = (string?)null } },
+        };
+        var create = await session.PostAsync("/api/v1/templates",
+            new { name = $"Uses asset {Guid.NewGuid():N}", description = (string?)null, content });
+        create.EnsureSuccessStatusCode();
+
+        // Delete is blocked with a usages list.
+        var blocked = await session.SendAsync(HttpMethod.Delete, $"/api/v1/assets/{assetId}");
+        Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
+        var body = await blocked.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("asset.in_use", body.GetProperty("errorCode").GetString());
+        Assert.True(body.GetProperty("usages").GetArrayLength() > 0);
+
+        // Force deletes it anyway.
+        var forced = await session.SendAsync(HttpMethod.Delete, $"/api/v1/assets/{assetId}?force=true");
+        Assert.Equal(HttpStatusCode.NoContent, forced.StatusCode);
+    }
+
+    [Fact]
     public async Task Search_and_kind_filters_work()
     {
         var session = await RegisteredSessionAsync();

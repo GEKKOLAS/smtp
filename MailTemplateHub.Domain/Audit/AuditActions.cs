@@ -20,4 +20,12 @@ public static class AuditActions
     public const string AssetUploaded = "asset.uploaded";
     public const string AssetDeleted = "asset.deleted";
     public const string AssetRejected = "asset.rejected";
+
+    public const string TemplateCreated = "template.created";
+    public const string TemplateUpdated = "template.updated";
+    public const string TemplateVersionSaved = "template.version_saved";
+    public const string TemplateDuplicated = "template.duplicated";
+    public const string TemplateArchived = "template.archived";
+    public const string TemplateDeleted = "template.deleted";
+    public const string TemplateRestored = "template.restored";
 }

@@ -1,4 +1,5 @@
 using FluentValidation;
+using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Common;
 using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Domain.Errors;
@@ -21,10 +22,11 @@ internal sealed class GlobalExceptionHandler(
         var (status, title, errorCode) = exception switch
         {
             ValidationException => (StatusCodes.Status422UnprocessableEntity, "Validation failed.", "validation_failed"),
-            UnprocessableAssetException asset => (StatusCodes.Status422UnprocessableEntity, asset.Message, asset.Code),
             NotFoundException notFound => (StatusCodes.Status404NotFound, notFound.Message, notFound.Code),
             UnauthorizedAppException unauthorized => (StatusCodes.Status401Unauthorized, unauthorized.Message, unauthorized.Code),
             ConflictException conflict => (StatusCodes.Status409Conflict, conflict.Message, conflict.Code),
+            // All remaining AppException subtypes (asset/render/content validation) are 422.
+            AppException app => (StatusCodes.Status422UnprocessableEntity, app.Message, app.Code),
             DomainException domain => (StatusCodes.Status400BadRequest, domain.Message, domain.Code),
             OperationCanceledException => (StatusCodes.Status499ClientClosedRequest, "Request cancelled.", "request_cancelled"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", "internal_error"),
@@ -47,13 +49,25 @@ internal sealed class GlobalExceptionHandler(
             },
         };
 
-        if (exception is ValidationException validation)
+        switch (exception)
         {
-            problemDetails.Extensions["errors"] = validation.Errors
-                .GroupBy(e => e.PropertyName)
-                .ToDictionary(
-                    g => System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(g.Key),
-                    g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+            case ValidationException validation:
+                problemDetails.Extensions["errors"] = validation.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(
+                        g => System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(g.Key),
+                        g => g.Select(e => e.ErrorMessage).Distinct().ToArray());
+                break;
+            case MjmlInvalidException mjml:
+                problemDetails.Extensions["mjmlErrors"] = mjml.Errors
+                    .Select(e => new { e.Line, e.Column, e.Message }).ToArray();
+                break;
+            case MissingVariablesException missing:
+                problemDetails.Extensions["missingVariables"] = missing.Missing;
+                break;
+            case AssetInUseException inUse:
+                problemDetails.Extensions["usages"] = inUse.Usages;
+                break;
         }
 
         httpContext.Response.StatusCode = status;
