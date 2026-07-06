@@ -6,6 +6,7 @@ import { queryKeys } from "@/lib/query/query-keys";
 import type { Template, TemplateContentInput, TemplateVariable } from "@/lib/schemas/templates";
 import { MjmlSourceEditor } from "@/components/editor/mjml-source-editor";
 import { PreviewPane } from "@/components/editor/preview-pane";
+import { TestSendDialog } from "@/components/editor/test-send-dialog";
 import { VariablePanel, detectVariables } from "@/components/editor/variable-panel";
 import { VersionHistorySheet } from "@/components/editor/version-history-sheet";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ export function TemplateEditor({ template }: { template: Template }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <TestSendDialog versionId={version?.id} disabled={dirty} />
           <VersionHistorySheet
             templateId={template.id}
             onRestored={() => queryClient.invalidateQueries({ queryKey: queryKeys.template(template.id) })}
