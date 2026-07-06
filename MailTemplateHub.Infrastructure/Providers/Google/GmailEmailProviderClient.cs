@@ -3,7 +3,9 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MailTemplateHub.Application.Abstractions.Email;
 using MailTemplateHub.Application.Abstractions.Oauth;
+using MailTemplateHub.Application.Common;
 using MailTemplateHub.Domain.Enums;
+using Microsoft.Extensions.Options;
 
 namespace MailTemplateHub.Infrastructure.Providers.Google;
 
@@ -11,10 +13,11 @@ namespace MailTemplateHub.Infrastructure.Providers.Google;
 /// Sends via the Gmail API (users.messages.send) with a raw RFC 2822 message
 /// (spec 07 §3.1). One MIME path for both providers.
 /// </summary>
-internal sealed class GmailEmailProviderClient(HttpClient httpClient, IEmailMessageBuilder messageBuilder)
+internal sealed class GmailEmailProviderClient(
+    HttpClient httpClient, IEmailMessageBuilder messageBuilder, IOptions<ProviderSendOptions> options)
     : IEmailProviderClient
 {
-    private const string SendUrl = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
+    private readonly string _sendUrl = options.Value.GmailSendUrl;
 
     public EmailProvider Provider => EmailProvider.Gmail;
     public TimeSpan MinSendInterval => TimeSpan.FromSeconds(1); // ~1 send/sec/account
@@ -25,7 +28,7 @@ internal sealed class GmailEmailProviderClient(HttpClient httpClient, IEmailMess
         using var built = messageBuilder.Build(email);
         var raw = Base64Url(await ReadAllAsync(built.Rfc822Stream, ct));
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, SendUrl)
+        using var request = new HttpRequestMessage(HttpMethod.Post, _sendUrl)
         {
             Content = JsonContent.Create(new { raw }),
         };

@@ -72,6 +72,7 @@ public static class DependencyInjection
     private static void AddSending(IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<SendLimitsOptions>().BindConfiguration(SendLimitsOptions.SectionName);
+        services.AddOptions<ProviderSendOptions>().BindConfiguration(ProviderSendOptions.SectionName);
 
         services.AddSingleton<IEmailMessageBuilder, MimeKitEmailMessageBuilder>();
         services.AddHttpClient<GmailEmailProviderClient>();

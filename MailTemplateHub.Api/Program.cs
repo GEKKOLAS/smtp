@@ -123,9 +123,10 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Recurring background jobs (spec 10-jobs.md); Hangfire tables are created by the server.
+// Use the DI-based manager so the configured storage is used (not the static API).
 if (jobsRunInProcess)
 {
-    RecurringJob.AddOrUpdate<PromoteScheduledSendsJob>(
+    app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<PromoteScheduledSendsJob>(
         "promote-scheduled", job => job.RunAsync(CancellationToken.None), "* * * * *");
 }
 

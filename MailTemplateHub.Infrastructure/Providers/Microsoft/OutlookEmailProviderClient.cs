@@ -3,7 +3,9 @@ using System.Text;
 using System.Text.Json;
 using MailTemplateHub.Application.Abstractions.Email;
 using MailTemplateHub.Application.Abstractions.Oauth;
+using MailTemplateHub.Application.Common;
 using MailTemplateHub.Domain.Enums;
+using Microsoft.Extensions.Options;
 
 namespace MailTemplateHub.Infrastructure.Providers.Microsoft;
 
@@ -12,10 +14,11 @@ namespace MailTemplateHub.Infrastructure.Providers.Microsoft;
 /// posted to /me/sendMail as MIME (spec 07 §3.2), so both providers share one
 /// MIME build path. Graph returns 202 with no message id.
 /// </summary>
-internal sealed class OutlookEmailProviderClient(HttpClient httpClient, IEmailMessageBuilder messageBuilder)
+internal sealed class OutlookEmailProviderClient(
+    HttpClient httpClient, IEmailMessageBuilder messageBuilder, IOptions<ProviderSendOptions> options)
     : IEmailProviderClient
 {
-    private const string SendUrl = "https://graph.microsoft.com/v1.0/me/sendMail";
+    private readonly string _sendUrl = options.Value.GraphSendUrl;
 
     public EmailProvider Provider => EmailProvider.Outlook;
     public TimeSpan MinSendInterval => TimeSpan.FromSeconds(2); // conservative submission throttle
@@ -26,7 +29,7 @@ internal sealed class OutlookEmailProviderClient(HttpClient httpClient, IEmailMe
         using var built = messageBuilder.Build(email);
         var mimeBase64 = Convert.ToBase64String(await ReadAllAsync(built.Rfc822Stream, ct));
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, SendUrl)
+        using var request = new HttpRequestMessage(HttpMethod.Post, _sendUrl)
         {
             Content = new StringContent(mimeBase64, Encoding.UTF8, "text/plain"),
         };
