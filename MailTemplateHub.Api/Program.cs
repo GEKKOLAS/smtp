@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using Hangfire;
 using MailTemplateHub.Api;
 using MailTemplateHub.Api.Auth;
+using MailTemplateHub.Api.Logging;
 using MailTemplateHub.Api.Middleware;
 using MailTemplateHub.Application;
 using MailTemplateHub.Application.Abstractions;
@@ -20,7 +21,9 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, loggerConfiguration) =>
-    loggerConfiguration.ReadFrom.Configuration(context.Configuration));
+    loggerConfiguration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.With<SecretScrubbingEnricher>());
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -98,6 +101,7 @@ if (jobsRunInProcess)
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -126,8 +130,13 @@ using (var scope = app.Services.CreateScope())
 // Use the DI-based manager so the configured storage is used (not the static API).
 if (jobsRunInProcess)
 {
-    app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<PromoteScheduledSendsJob>(
+    var recurring = app.Services.GetRequiredService<IRecurringJobManager>();
+    recurring.AddOrUpdate<PromoteScheduledSendsJob>(
         "promote-scheduled", job => job.RunAsync(CancellationToken.None), "* * * * *");
+    recurring.AddOrUpdate<RefreshTokensJob>(
+        "refresh-tokens", job => job.RunAsync(CancellationToken.None), "0 * * * *");
+    recurring.AddOrUpdate<CleanupJob>(
+        "cleanup", job => job.RunAsync(CancellationToken.None), "0 3 * * *");
 }
 
 await app.RunAsync();

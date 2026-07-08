@@ -83,6 +83,8 @@ public static class DependencyInjection
         services.AddScoped<IEmailSendService, EmailSendService>();
         services.AddScoped<SendEmailJob>();
         services.AddScoped<PromoteScheduledSendsJob>();
+        services.AddScoped<RefreshTokensJob>();
+        services.AddScoped<CleanupJob>();
 
         // Hangfire hosts the queue in-process (dev/prod). Tests set RunInProcess=false
         // and substitute a synchronous IBackgroundJobScheduler.
