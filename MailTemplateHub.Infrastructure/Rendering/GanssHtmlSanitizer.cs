@@ -23,6 +23,10 @@ internal sealed class GanssHtmlSanitizer : Application.Abstractions.Rendering.IH
                      "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "pre", "code",
                      "table", "thead", "tbody", "tfoot", "tr", "td", "th", "col", "colgroup", "caption",
                      "img", "center", "font", "small", "sub", "sup", "style",
+                     // HTML5 structural/semantic tags for custom templates (safe: no scripting).
+                     "section", "article", "header", "footer", "main", "nav", "aside",
+                     "figure", "figcaption", "picture", "source", "mark", "time", "abbr",
+                     "cite", "q", "del", "ins", "wbr", "address", "dl", "dt", "dd",
                  })
         {
             _sanitizer.AllowedTags.Add(tag);
@@ -34,6 +38,7 @@ internal sealed class GanssHtmlSanitizer : Application.Abstractions.Rendering.IH
                      "href", "src", "alt", "title", "width", "height", "align", "valign",
                      "border", "cellpadding", "cellspacing", "bgcolor", "color", "style", "class",
                      "role", "target", "colspan", "rowspan", "dir", "background",
+                     "srcset", "sizes", "media", "datetime", "id",
                  })
         {
             _sanitizer.AllowedAttributes.Add(attr);

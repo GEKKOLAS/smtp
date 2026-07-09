@@ -9,6 +9,7 @@ public sealed class RateLimitingOptions
     public PolicyOptions Upload { get; init; } = new() { PermitLimit = 60, WindowMinutes = 60 };
     public PolicyOptions Render { get; init; } = new() { PermitLimit = 120, WindowMinutes = 1 };
     public PolicyOptions Send { get; init; } = new() { PermitLimit = 30, WindowMinutes = 60 };
+    public PolicyOptions Ai { get; init; } = new() { PermitLimit = 20, WindowMinutes = 60 };
 
     public sealed class PolicyOptions
     {

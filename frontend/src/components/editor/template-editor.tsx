@@ -94,6 +94,20 @@ export function TemplateEditor({ template }: { template: Template }) {
 
   const markDirty = () => setDirty(true);
 
+  const exportHtml = useMutation({
+    mutationFn: () => previewTemplate({ content, variables: {}, mode: "sample" }),
+    onSuccess: (result) => {
+      const blob = new Blob([result.html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${template.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.html`;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+    onError: () => toast.error("Could not export the HTML."),
+  });
+
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
@@ -109,6 +123,9 @@ export function TemplateEditor({ template }: { template: Template }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => exportHtml.mutate()} disabled={exportHtml.isPending}>
+            Export HTML
+          </Button>
           <TestSendDialog versionId={version?.id} disabled={dirty} />
           <VersionHistorySheet
             templateId={template.id}

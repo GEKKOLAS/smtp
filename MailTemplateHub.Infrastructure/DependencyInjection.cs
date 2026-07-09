@@ -3,12 +3,14 @@ using Amazon.S3;
 using Hangfire;
 using Hangfire.PostgreSql;
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Application.Abstractions.Ai;
 using MailTemplateHub.Application.Abstractions.Email;
 using MailTemplateHub.Application.Abstractions.Jobs;
 using MailTemplateHub.Application.Abstractions.Oauth;
 using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Abstractions.Storage;
 using MailTemplateHub.Application.Common;
+using MailTemplateHub.Infrastructure.Ai;
 using MailTemplateHub.Infrastructure.Rendering;
 using MailTemplateHub.Infrastructure.Audit;
 using MailTemplateHub.Infrastructure.Email;
@@ -65,8 +67,26 @@ public static class DependencyInjection
         services.AddSingleton<ITemplateRenderer, TemplateRenderer>();
 
         AddSending(services, configuration);
+        AddAi(services, configuration);
 
         return services;
+    }
+
+    private static void AddAi(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<AiOptions>().BindConfiguration(AiOptions.SectionName);
+
+        // Real Anthropic model when a key is set; deterministic scaffold otherwise.
+        if (!string.IsNullOrWhiteSpace(configuration[$"{AiOptions.SectionName}:ApiKey"]))
+        {
+            services.AddHttpClient<AnthropicTemplateGenerator>(client =>
+                client.Timeout = TimeSpan.FromSeconds(60));
+            services.AddScoped<IAiTemplateGenerator>(sp => sp.GetRequiredService<AnthropicTemplateGenerator>());
+        }
+        else
+        {
+            services.AddScoped<IAiTemplateGenerator, ScaffoldTemplateGenerator>();
+        }
     }
 
     private static void AddSending(IServiceCollection services, IConfiguration configuration)

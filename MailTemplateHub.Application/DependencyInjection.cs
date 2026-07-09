@@ -1,5 +1,6 @@
 using FluentValidation;
 using MailTemplateHub.Application.Features.Accounts;
+using MailTemplateHub.Application.Features.Ai;
 using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Application.Features.Audit;
 using MailTemplateHub.Application.Features.Auth;
@@ -36,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<TestSendHandler>();
         services.AddScoped<SendJobsHandler>();
         services.AddScoped<AuditLogsHandler>();
+        services.AddScoped<GenerateTemplateHandler>();
 
         return services;
     }
