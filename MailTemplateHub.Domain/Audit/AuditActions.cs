@@ -35,4 +35,7 @@ public static class AuditActions
     public const string SendRetried = "send.retried";
     public const string SendCompleted = "send.completed";
     public const string SendFailed = "send.failed";
+
+    public const string ApiKeyCreated = "api_key.created";
+    public const string ApiKeyRevoked = "api_key.revoked";
 }

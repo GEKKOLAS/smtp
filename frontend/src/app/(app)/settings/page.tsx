@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiKeysCard } from "@/components/settings/api-keys-card";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { PasswordForm } from "@/components/settings/password-form";
 import { SessionsCard } from "@/components/settings/sessions-card";
@@ -21,6 +22,8 @@ export default function SettingsPage() {
       <PasswordForm />
       <Separator />
       <SessionsCard />
+      <Separator />
+      <ApiKeysCard />
     </div>
   );
 }

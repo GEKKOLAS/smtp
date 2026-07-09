@@ -24,6 +24,7 @@ public interface IAppDbContext
     DbSet<EmailSendJob> EmailSendJobs { get; }
     DbSet<EmailSendRecipient> EmailSendRecipients { get; }
     DbSet<EmailSendAttachment> EmailSendAttachments { get; }
+    DbSet<ApiKey> ApiKeys { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

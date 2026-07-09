@@ -55,6 +55,28 @@ services:
       - ./tests/providerdoubles:/home/wiremock:ro
     command: ["--global-response-templating", "--verbose"]
 
+  # Workflow automation for the WhatsApp -> AI -> approval -> send flow.
+  # Opt-in: `docker compose --profile automation up -d n8n`.
+  # It reaches the API on the host at http://host.docker.internal:5001.
+  n8n:
+    image: n8nio/n8n:latest
+    profiles: ["automation"]
+    ports:
+      - "5678:5678"
+    environment:
+      N8N_SECURE_COOKIE: "false"
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: UTC
+      # Base URL of the Mail Template Hub API, reachable from inside the container.
+      MTH_API_BASE: http://host.docker.internal:5001/api/v1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8ndata:/home/node/.n8n
+
 volumes:
   pgdata:
   miniodata:
+  n8ndata:

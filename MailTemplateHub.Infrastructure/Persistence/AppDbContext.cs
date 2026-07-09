@@ -22,6 +22,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EmailSendJob> EmailSendJobs => Set<EmailSendJob>();
     public DbSet<EmailSendRecipient> EmailSendRecipients => Set<EmailSendRecipient>();
     public DbSet<EmailSendAttachment> EmailSendAttachments => Set<EmailSendAttachment>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     public async Task<IAsyncDisposable> AcquireAdvisoryLockAsync(long key, CancellationToken cancellationToken)
     {

@@ -45,8 +45,17 @@ builder.Services.AddSingleton<AuthCookies>();
 
 builder.Services
     .AddAuthentication(SessionAuthentication.Scheme)
-    .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthentication.Scheme, null);
-builder.Services.AddAuthorization();
+    .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>(SessionAuthentication.Scheme, null)
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthentication.Scheme, null);
+// Endpoints accept a browser session or a programmatic API key, unless a
+// controller pins a specific scheme (e.g. API-key management is session-only).
+builder.Services.AddAuthorization(options =>
+{
+    options.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder(
+            SessionAuthentication.Scheme, ApiKeyAuthentication.Scheme)
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // --- Rate limiting (spec 04-security.md §6) ---
 // Limits are resolved per request via options so configuration overrides
