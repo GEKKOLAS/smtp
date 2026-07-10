@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Dev secrets (e.g. Ai:ApiKey) live outside the repo in the user profile. -->
+    <UserSecretsId>mailtemplatehub-api-dev</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

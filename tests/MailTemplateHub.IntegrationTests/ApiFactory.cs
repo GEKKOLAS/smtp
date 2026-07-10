@@ -85,6 +85,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // (the in-memory config below is only merged for post-build option reads).
         builder.UseSetting("Jobs:RunInProcess", "false");
 
+        // The Api assembly loads dev user-secrets (which may hold a real Anthropic
+        // key); blank it so tests always use the scaffold generator and never
+        // spend real API credit.
+        builder.UseSetting("Ai:ApiKey", "");
+
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {

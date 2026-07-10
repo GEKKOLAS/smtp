@@ -82,10 +82,27 @@ internal sealed class AnthropicTemplateGenerator(HttpClient httpClient, IOptions
 
     private static string ExtractText(string body)
     {
-        using var doc = JsonDocument.Parse(body);
-        if (doc.RootElement.TryGetProperty("content", out var content) && content.GetArrayLength() > 0)
+        try
         {
-            return content[0].GetProperty("text").GetString() ?? string.Empty;
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("content", out var content)
+                && content.ValueKind == JsonValueKind.Array)
+            {
+                // The first block may be a thinking/tool block; take the first text block.
+                foreach (var block in content.EnumerateArray())
+                {
+                    if (block.TryGetProperty("text", out var text)
+                        && text.ValueKind == JsonValueKind.String
+                        && text.GetString() is { Length: > 0 } value)
+                    {
+                        return value;
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // fall through to the typed error below
         }
         throw new AiGenerationException("The AI service returned an unexpected response.");
     }
