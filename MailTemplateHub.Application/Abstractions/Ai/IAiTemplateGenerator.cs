@@ -7,14 +7,17 @@ public sealed record AiTemplateRequest(
     string? BrandColor,
     string? Tone,
     IReadOnlyList<string> AssetUrls,
-    IReadOnlyList<string> DesiredVariables);
+    IReadOnlyList<string> DesiredVariables,
+    string? VideoUrl,
+    string? VideoThumbnailUrl);
 
 public sealed record AiVariable(string Name, string Type, string Sample);
 
 public sealed record AiGeneratedTemplate(
     string Subject,
     string MjmlSource,
-    IReadOnlyList<AiVariable> Variables);
+    IReadOnlyList<AiVariable> Variables,
+    string? Preheader = null);
 
 /// <summary>
 /// Turns a natural-language prompt into an MJML email template. Implemented by a

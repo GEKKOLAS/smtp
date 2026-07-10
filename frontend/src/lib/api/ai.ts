@@ -3,6 +3,7 @@ import { z } from "zod";
 
 const generatedTemplateSchema = z.object({
   subject: z.string(),
+  preheader: z.string().nullable(),
   mjmlSource: z.string(),
   htmlBody: z.string(),
   variables: z.array(z.object({ name: z.string(), type: z.string(), sample: z.string() })),
@@ -17,6 +18,7 @@ export function generateTemplate(input: {
   tone?: string;
   assetIds?: string[];
   variables?: string[];
+  videoUrl?: string;
 }): Promise<GeneratedTemplate> {
   return api("/ai/templates/generate", { body: input, schema: generatedTemplateSchema });
 }

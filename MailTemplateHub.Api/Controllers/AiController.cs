@@ -15,7 +15,8 @@ public sealed class AiController(GenerateTemplateHandler handler) : ControllerBa
         string? BrandColor,
         string? Tone,
         IReadOnlyList<Guid>? AssetIds,
-        IReadOnlyList<string>? Variables);
+        IReadOnlyList<string>? Variables,
+        string? VideoUrl);
 
     /// <summary>Generates an MJML template from a prompt (returns content + preview, no persist).</summary>
     [HttpPost("templates/generate")]
@@ -24,6 +25,6 @@ public sealed class AiController(GenerateTemplateHandler handler) : ControllerBa
         => Ok(await handler.HandleAsync(
             new GenerateTemplateCommand(
                 request.Prompt, request.BrandColor, request.Tone,
-                request.AssetIds ?? [], request.Variables ?? []),
+                request.AssetIds ?? [], request.Variables ?? [], request.VideoUrl),
             ct));
 }

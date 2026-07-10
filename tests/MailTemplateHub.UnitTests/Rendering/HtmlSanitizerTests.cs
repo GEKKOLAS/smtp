@@ -62,4 +62,35 @@ public class HtmlSanitizerTests
         var clean = _sanitizer.Sanitize("<img src=\"mth-asset://019f0000-0000-0000-0000-000000000000\" alt=\"x\">");
         Assert.Contains("mth-asset://", clean);
     }
+
+    [Fact]
+    public void Keeps_background_image_attribute_from_mjml_hero_sections()
+    {
+        // MJML compiles an mj-section background-url into a "background" HTML
+        // attribute on a <table> (plus a VML fallback for Outlook), not a CSS
+        // property — this must survive sanitization for hero/video-card sections.
+        var html = """<table background="https://example.com/hero.jpg" role="presentation"><tr><td>Hero</td></tr></table>""";
+
+        var clean = _sanitizer.Sanitize(html);
+
+        Assert.Contains("https://example.com/hero.jpg", clean);
+    }
+
+    [Fact]
+    public void Keeps_gradient_hero_styling_declared_via_mj_style_class()
+    {
+        // MJML has no gradient attribute on mj-section, so the AI is instructed to
+        // emit a <style> class (mj-style) with a linear-gradient background-image
+        // and apply it via css-class. Both the stylesheet rule and the class
+        // reference must survive sanitization.
+        var html = """
+            <style>.gradient-hero { background-image: linear-gradient(135deg, #2563eb, #1d4ed8) !important; }</style>
+            <div class="gradient-hero">Hero</div>
+            """;
+
+        var clean = _sanitizer.Sanitize(html);
+
+        Assert.Contains("linear-gradient", clean);
+        Assert.Contains("gradient-hero", clean);
+    }
 }

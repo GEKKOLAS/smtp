@@ -1,6 +1,7 @@
 "use client";
 
 import { generateTemplate } from "@/lib/api/ai";
+import { listAssets } from "@/lib/api/assets";
 import { createTemplate } from "@/lib/api/templates";
 import { ApiError } from "@/lib/api/client";
 import { starterContent } from "@/lib/templates-defaults";
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -40,16 +41,29 @@ export function NewTemplateDialog() {
   const [importHtml, setImportHtml] = useState("");
   const [prompt, setPrompt] = useState("");
   const [brandColor, setBrandColor] = useState("#2563eb");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const assetPicker = useQuery({
+    queryKey: ["assets", "picker", "image"],
+    queryFn: () => listAssets({ kind: "image", pageSize: 12 }),
+    enabled: open && mode === "ai",
+  });
 
   const create = useMutation({
     mutationFn: async (): Promise<TemplateContentInput> => {
       if (mode === "ai") {
-        const g = await generateTemplate({ prompt, brandColor });
+        const g = await generateTemplate({
+          prompt,
+          brandColor,
+          assetIds: selectedAssetIds,
+          videoUrl: videoUrl.trim() || undefined,
+        });
         return {
           editorKind: "mjml",
           subject: g.subject,
-          preheader: null,
+          preheader: g.preheader,
           mjmlSource: g.mjmlSource,
           grapesProject: null,
           htmlBody: "",
@@ -126,26 +140,80 @@ export function NewTemplateDialog() {
           </div>
 
           {mode === "ai" && (
-            <div className="space-y-2">
-              <Label htmlFor="ai-prompt">Describe your email</Label>
-              <textarea
-                id="ai-prompt"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="A warm welcome email for new subscribers to my coffee shop, with a 10% off first order button"
-                rows={3}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-              />
-              <div className="flex items-center gap-2">
-                <Label htmlFor="ai-color" className="text-xs">Brand color</Label>
-                <input
-                  id="ai-color"
-                  type="color"
-                  value={brandColor}
-                  onChange={(e) => setBrandColor(e.target.value)}
-                  className="h-7 w-10 rounded border"
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="ai-prompt">Describe your email</Label>
+                <textarea
+                  id="ai-prompt"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="A warm welcome email for new subscribers to my coffee shop, with a 10% off first order button"
+                  rows={3}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="ai-color" className="text-xs">Brand color</Label>
+                  <input
+                    id="ai-color"
+                    type="color"
+                    value={brandColor}
+                    onChange={(e) => setBrandColor(e.target.value)}
+                    className="h-7 w-10 rounded border"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ai-video" className="text-xs">Video link (optional)</Label>
+                <Input
+                  id="ai-video"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=… or any video URL"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Email clients can&apos;t play video, so this becomes a thumbnail card that links out to it.
+                </p>
+              </div>
+
+              {assetPicker.data && assetPicker.data.items.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Images to use (optional)</Label>
+                  <div className="grid grid-cols-6 gap-2">
+                    {assetPicker.data.items.map((asset) => {
+                      const selected = selectedAssetIds.includes(asset.id);
+                      return (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          title={asset.originalFilename}
+                          onClick={() =>
+                            setSelectedAssetIds((ids) =>
+                              selected ? ids.filter((id) => id !== asset.id) : [...ids, asset.id],
+                            )
+                          }
+                          className={`aspect-square overflow-hidden rounded-md border-2 bg-muted ${
+                            selected ? "border-primary" : "border-transparent hover:border-muted-foreground/30"
+                          }`}
+                        >
+                          {asset.publicUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={asset.publicUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+                              private
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

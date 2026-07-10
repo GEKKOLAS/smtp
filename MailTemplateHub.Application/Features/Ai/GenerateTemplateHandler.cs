@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using MailTemplateHub.Application.Abstractions;
 using MailTemplateHub.Application.Abstractions.Ai;
 using MailTemplateHub.Application.Abstractions.Rendering;
@@ -14,12 +15,14 @@ public sealed record GenerateTemplateCommand(
     string? BrandColor,
     string? Tone,
     IReadOnlyList<Guid> AssetIds,
-    IReadOnlyList<string> DesiredVariables);
+    IReadOnlyList<string> DesiredVariables,
+    string? VideoUrl);
 
 public sealed record GeneratedVariableDto(string Name, string Type, string Sample);
 
 public sealed record GeneratedTemplateDto(
     string Subject,
+    string? Preheader,
     string MjmlSource,
     string HtmlBody,
     IReadOnlyList<GeneratedVariableDto> Variables,
@@ -31,7 +34,7 @@ public sealed record GeneratedTemplateDto(
 /// and returns content ready to save via POST /templates. Stateless (no persist),
 /// so it also serves the WhatsApp/n8n "generate -> approve -> send" flow.
 /// </summary>
-public sealed class GenerateTemplateHandler(
+public sealed partial class GenerateTemplateHandler(
     IAiTemplateGenerator generator,
     IMjmlCompiler mjmlCompiler,
     ITemplateRenderer renderer,
@@ -48,10 +51,12 @@ public sealed class GenerateTemplateHandler(
         }
 
         var assetUrls = await ResolveAssetUrlsAsync(command.AssetIds, ct);
+        var videoUrl = string.IsNullOrWhiteSpace(command.VideoUrl) ? null : command.VideoUrl.Trim();
+        var videoThumbnailUrl = videoUrl is null ? null : DeriveVideoThumbnailUrl(videoUrl);
 
         var generated = await generator.GenerateAsync(
             new AiTemplateRequest(command.Prompt, command.BrandColor, command.Tone,
-                assetUrls.Values.ToList(), command.DesiredVariables),
+                assetUrls.Values.ToList(), command.DesiredVariables, videoUrl, videoThumbnailUrl),
             ct);
 
         // The generated MJML must compile; the scaffold always does, a real model
@@ -71,13 +76,14 @@ public sealed class GenerateTemplateHandler(
 
         var previewVars = variables.ToDictionary(v => v.Name, v => (string?)v.Sample);
         var content = new TemplateContent(
-            generated.Subject, null, EditorKind.Mjml, generated.MjmlSource, compiled.Html, null,
+            generated.Subject, generated.Preheader, EditorKind.Mjml, generated.MjmlSource, compiled.Html, null,
             variables, []);
         var rendered = renderer.Render(new RenderRequest(content, previewVars, Strict: false,
             new Dictionary<Guid, string>()));
 
         return new GeneratedTemplateDto(
             generated.Subject,
+            generated.Preheader,
             generated.MjmlSource,
             compiled.Html,
             generated.Variables.Select(v => new GeneratedVariableDto(v.Name, v.Type, v.Sample)).ToList(),
@@ -108,6 +114,19 @@ public sealed class GenerateTemplateHandler(
         }
         return map;
     }
+
+    // Email clients don't render <video> or execute JavaScript, so a linked video
+    // must ship as a static thumbnail with a play-button overlay. For YouTube URLs
+    // the thumbnail is derivable from the video ID with no network call; other
+    // hosts fall back to a plain "watch video" link (no fabricated thumbnail).
+    private static string? DeriveVideoThumbnailUrl(string videoUrl)
+    {
+        var match = YouTubeIdRegex().Match(videoUrl);
+        return match.Success ? $"https://img.youtube.com/vi/{match.Groups[1].Value}/hqdefault.jpg" : null;
+    }
+
+    [GeneratedRegex(@"(?:youtube\.com/(?:watch\?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})")]
+    private static partial Regex YouTubeIdRegex();
 }
 
 /// <summary>Lightweight validation failure (maps to 422) for the AI feature.</summary>
