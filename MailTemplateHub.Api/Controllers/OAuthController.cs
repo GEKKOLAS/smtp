@@ -11,7 +11,8 @@ namespace MailTemplateHub.Api.Controllers;
 [ApiController]
 [Route("api/v1/oauth/{provider}")]
 [Authorize]
-public sealed class OAuthController(IOptions<OAuthGeneralOptions> generalOptions) : ControllerBase
+public sealed class OAuthController(IOptions<OAuthGeneralOptions> generalOptions, ILogger<OAuthController> logger)
+    : ControllerBase
 {
     // Provider slug -> enum; anything else is a 404 route miss.
     private static bool TryParseProvider(string provider, out EmailProvider parsed)
@@ -46,6 +47,7 @@ public sealed class OAuthController(IOptions<OAuthGeneralOptions> generalOptions
         [FromQuery] string? code,
         [FromQuery] string? state,
         [FromQuery] string? error,
+        [FromQuery] string? error_description,
         [FromServices] OAuthCallbackHandler handler,
         CancellationToken ct)
     {
@@ -53,9 +55,16 @@ public sealed class OAuthController(IOptions<OAuthGeneralOptions> generalOptions
 
         var frontendBase = generalOptions.Value.FrontendBaseUrl;
 
-        // The user denied consent at the provider.
+        // The user denied consent at the provider — or the provider rejected the
+        // request outright (bad redirect URI, app not yet propagated, permissions
+        // not granted, etc). Log the raw reason: the frontend only ever shows a
+        // generic "cancelled" message for any non-empty `error`, so this is the
+        // only place the real cause is visible.
         if (!string.IsNullOrEmpty(error))
         {
+            logger.LogWarning(
+                "OAuth callback for {Provider} returned an error: {Error} — {ErrorDescription}",
+                provider, error, error_description);
             return RedirectToFrontend(frontendBase, "/accounts", errorCode: "oauth.access_denied");
         }
 

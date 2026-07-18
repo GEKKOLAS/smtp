@@ -97,8 +97,17 @@ public sealed class OAuthCallbackHandler(
 
     private static bool HasRequiredScopes(IOAuthProviderService service, IReadOnlyList<string> granted)
     {
-        var grantedSet = new HashSet<string>(granted, StringComparer.OrdinalIgnoreCase);
-        return service.RequiredScopes.All(grantedSet.Contains);
+        var grantedSet = new HashSet<string>(granted.Select(NormalizeScope), StringComparer.OrdinalIgnoreCase);
+        return service.RequiredScopes.Select(NormalizeScope).All(grantedSet.Contains);
+    }
+
+    // Providers sometimes return a scope as a fully-qualified resource URI
+    // ("https://graph.microsoft.com/Mail.Send") instead of the bare name
+    // requested ("Mail.Send") — compare by the last path segment either way.
+    private static string NormalizeScope(string scope)
+    {
+        var slash = scope.LastIndexOf('/');
+        return slash >= 0 ? scope[(slash + 1)..] : scope;
     }
 
     private async Task<ConnectedEmailAccount> UpsertAccountAsync(

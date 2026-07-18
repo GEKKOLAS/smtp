@@ -10,6 +10,12 @@ internal sealed class MicrosoftOAuthService(HttpClient httpClient, IOptions<Micr
 {
     public override EmailProvider Provider => EmailProvider.Outlook;
 
+    // Microsoft echoes granted Graph permissions back as fully-qualified resource
+    // URIs (e.g. "https://graph.microsoft.com/Mail.Send") rather than the bare
+    // scope name requested — HasRequiredScopes normalizes both sides before
+    // comparing, so either form matches.
+    public override IReadOnlyList<string> RequiredScopes => ["Mail.Send"];
+
     protected override IEnumerable<KeyValuePair<string, string?>> ExtraAuthorizationParameters() =>
     [
         new("response_mode", "query"),

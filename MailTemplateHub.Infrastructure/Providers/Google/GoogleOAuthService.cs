@@ -9,6 +9,7 @@ internal sealed class GoogleOAuthService(HttpClient httpClient, IOptions<GoogleO
     : OAuthProviderServiceBase(httpClient, options.Value)
 {
     public override EmailProvider Provider => EmailProvider.Gmail;
+    public override IReadOnlyList<string> RequiredScopes => ["https://www.googleapis.com/auth/gmail.send"];
 
     // access_type=offline + prompt=consent guarantee a refresh token (spec 07 §1).
     protected override IEnumerable<KeyValuePair<string, string?>> ExtraAuthorizationParameters() =>

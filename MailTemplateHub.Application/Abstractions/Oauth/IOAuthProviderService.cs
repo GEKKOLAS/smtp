@@ -25,7 +25,14 @@ public interface IOAuthProviderService
 {
     EmailProvider Provider { get; }
 
-    /// <summary>Scopes we request; used to detect insufficient-scope grants on callback.</summary>
+    /// <summary>
+    /// The scope(s) that must actually be granted for the account to be usable for
+    /// sending — deliberately narrower than the full list requested. Providers
+    /// (Microsoft in particular) don't reliably echo pure-identity scopes
+    /// (openid/profile/email/offline_access) back in the token response's "scope"
+    /// field even when granted, so gating on those produces false "insufficient
+    /// scope" failures for every real connection.
+    /// </summary>
     IReadOnlyList<string> RequiredScopes { get; }
 
     string BuildAuthorizationUrl(string state, string codeChallenge, string redirectUri);

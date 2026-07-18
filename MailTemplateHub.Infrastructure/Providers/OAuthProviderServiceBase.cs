@@ -18,7 +18,7 @@ internal abstract class OAuthProviderServiceBase(HttpClient httpClient, OAuthPro
     protected OAuthProviderOptions Options { get; } = options;
 
     public abstract EmailProvider Provider { get; }
-    public IReadOnlyList<string> RequiredScopes => Options.Scopes;
+    public abstract IReadOnlyList<string> RequiredScopes { get; }
 
     public virtual string BuildAuthorizationUrl(string state, string codeChallenge, string redirectUri)
     {
