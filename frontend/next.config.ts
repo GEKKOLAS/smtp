@@ -5,6 +5,14 @@ import type { NextConfig } from "next";
 const apiUrl = process.env.API_URL ?? "http://localhost:5001";
 
 const nextConfig: NextConfig = {
+  // Next.js's rewrite proxy defaults to a 30s timeout (proxy-request.js:
+  // `proxyTimeout || 30000`) — AI template generation can legitimately run
+  // longer than that (retries on a flaky connection to Anthropic), so this
+  // must be raised or every long-running rewritten request gets killed at
+  // exactly 30s regardless of how the backend itself is doing.
+  experimental: {
+    proxyTimeout: 180_000,
+  },
   async rewrites() {
     return [
       {

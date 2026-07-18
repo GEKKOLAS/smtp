@@ -3,7 +3,11 @@
 import { previewTemplate, saveVersion } from "@/lib/api/templates";
 import { ApiError } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/query-keys";
-import type { Template, TemplateContentInput, TemplateVariable } from "@/lib/schemas/templates";
+import type { EditorKind, Template, TemplateContentInput, TemplateVariable } from "@/lib/schemas/templates";
+import { applyPlaceholder, type PlaceholderRole } from "@/lib/mjml-placeholders";
+import { AiEditDialog } from "@/components/editor/ai-edit-dialog";
+import { EditorKindSwitcher } from "@/components/editor/editor-kind-switcher";
+import { ImagePlaceholdersPanel } from "@/components/editor/image-placeholders-panel";
 import { MjmlSourceEditor } from "@/components/editor/mjml-source-editor";
 import { PreviewPane } from "@/components/editor/preview-pane";
 import { TestSendDialog } from "@/components/editor/test-send-dialog";
@@ -26,10 +30,10 @@ const GrapesEditor = dynamic(
 export function TemplateEditor({ template }: { template: Template }) {
   const queryClient = useQueryClient();
   const version = template.currentVersion;
-  const editorKind = version?.editorKind ?? "html";
-  const showVisual = editorKind !== "html";
 
   // Local editable state initialized directly from the loaded version (props).
+  const [editorKind, setEditorKind] = useState<EditorKind>(version?.editorKind ?? "html");
+  const showVisual = editorKind !== "html";
   const [subject, setSubject] = useState(version?.subject ?? "");
   const [preheader, setPreheader] = useState(version?.preheader ?? "");
   const [source, setSource] = useState(
@@ -108,9 +112,44 @@ export function TemplateEditor({ template }: { template: Template }) {
     onError: () => toast.error("Could not export the HTML."),
   });
 
+  const convert = useMutation({
+    mutationFn: async () => {
+      if (editorKind === "html") {
+        // HTML -> MJML: mj-raw passes the existing markup through untouched,
+        // so the rendered output is identical while gaining the MJML tooling.
+        return { kind: "mjml" as const, next: `<mjml><mj-body><mj-raw>${source}</mj-raw></mj-body></mjml>` };
+      }
+      // MJML -> HTML: compile+sanitize+inline via the real render pipeline, but
+      // feed each variable back as its own "{{name}}" token so the Handlebars
+      // substitution is a no-op and the placeholders survive in the output.
+      const passthroughVars = Object.fromEntries(detected.map((name) => [name, `{{${name}}}`]));
+      const rendered = await previewTemplate({
+        content: { ...content, editorKind: "mjml" },
+        variables: passthroughVars,
+        mode: "sample",
+      });
+      return { kind: "html" as const, next: rendered.html };
+    },
+    onSuccess: ({ kind, next }) => {
+      setEditorKind(kind);
+      setSource(next);
+      setTab(kind === "html" ? "mjml" : "visual");
+      setGrapesKey((k) => k + 1);
+      markDirty();
+      toast.success(`Switched to ${kind === "html" ? "HTML" : "MJML"}.`);
+    },
+    onError: () => toast.error("Could not convert the template."),
+  });
+
+  const applyImagePlaceholder = (role: PlaceholderRole, imageUrl: string | null) => {
+    setSource((current) => applyPlaceholder(current, role, imageUrl));
+    setGrapesKey((k) => k + 1);
+    markDirty();
+  };
+
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+    <div className="flex h-[calc(100vh-7.5rem)] flex-col overflow-hidden rounded-2xl ring-1 ring-border/70">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-muted/30 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
             <Link href="/templates">← Templates</Link>
@@ -126,6 +165,32 @@ export function TemplateEditor({ template }: { template: Template }) {
           <Button variant="ghost" size="sm" onClick={() => exportHtml.mutate()} disabled={exportHtml.isPending}>
             Export HTML
           </Button>
+          <EditorKindSwitcher
+            isHtml={editorKind === "html"}
+            converting={convert.isPending}
+            onConvert={() => convert.mutate()}
+          />
+          <AiEditDialog
+            currentSource={source}
+            isHtml={editorKind === "html"}
+            onApplied={(result) => {
+              setSubject(result.subject);
+              setPreheader(result.preheader ?? "");
+              setSource(result.mjmlSource);
+              setVariables(
+                result.variables.map((v) => ({
+                  name: v.name,
+                  type: v.type,
+                  required: false,
+                  default: null,
+                  sample: v.sample,
+                })),
+              );
+              setGrapesKey((k) => k + 1);
+              markDirty();
+              toast.success("AI edit applied — review and save when ready.");
+            }}
+          />
           <TestSendDialog versionId={version?.id} disabled={dirty} />
           <VersionHistorySheet
             templateId={template.id}
@@ -137,7 +202,7 @@ export function TemplateEditor({ template }: { template: Template }) {
         </div>
       </div>
 
-      <div className="grid gap-3 border-b px-4 py-3 sm:grid-cols-2">
+      <div className="grid gap-3 border-b border-border/70 bg-card/40 px-4 py-3 backdrop-blur-xl sm:grid-cols-2">
         <div>
           <label className="text-xs font-medium text-muted-foreground">Subject</label>
           <Input value={subject} onChange={(e) => { setSubject(e.target.value); markDirty(); }} />
@@ -181,13 +246,19 @@ export function TemplateEditor({ template }: { template: Template }) {
           </div>
         </div>
 
-        <aside className="w-72 shrink-0 overflow-auto border-l">
-          <p className="border-b px-3 py-2 text-sm font-medium">Variables</p>
+        <aside className="w-72 shrink-0 overflow-auto border-l border-border/70 bg-card/40 backdrop-blur-xl">
+          <p className="border-b border-border/70 px-3 py-2 text-sm font-medium">Variables</p>
           <VariablePanel
             detected={detected}
             variables={variables}
             onChange={(next) => { setVariables(next); markDirty(); }}
           />
+          {showVisual && (
+            <>
+              <p className="border-y border-border/70 px-3 py-2 text-sm font-medium">Images</p>
+              <ImagePlaceholdersPanel currentMjml={source} onChange={applyImagePlaceholder} />
+            </>
+          )}
         </aside>
       </div>
     </div>

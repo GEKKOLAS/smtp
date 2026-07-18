@@ -16,10 +16,19 @@ internal sealed partial class ScaffoldTemplateGenerator : IAiTemplateGenerator
 
     public Task<AiGeneratedTemplate> GenerateAsync(AiTemplateRequest request, CancellationToken ct)
     {
+        // This deterministic fallback can't meaningfully "edit" arbitrary HTML per an
+        // instruction (there's no model behind it) — echo the existing document back
+        // unchanged rather than replacing it with an unrelated MJML scaffold.
+        if (request.CurrentHtml is not null)
+        {
+            return Task.FromResult(new AiGeneratedTemplate(
+                Subject(request.Prompt), request.CurrentHtml, [], Preheader(request.Prompt)));
+        }
+
         var accent = Sanitize(request.BrandColor) ?? "#2563eb";
         var hero = Darken(accent, 0.45);
         var tint = Lighten(accent, 0.92);
-        var heroImage = request.AssetUrls.FirstOrDefault();
+        var heroImage = request.BackgroundImageUrl ?? request.AssetUrls.FirstOrDefault();
         var headline = Headline(request.Prompt);
         var body = Body(request.Prompt);
 

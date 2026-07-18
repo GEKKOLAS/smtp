@@ -19,6 +19,12 @@ export function generateTemplate(input: {
   assetIds?: string[];
   variables?: string[];
   videoUrl?: string;
+  useAdvancedModel?: boolean;
+  currentMjml?: string;
+  currentHtml?: string;
+  backgroundImageAssetId?: string;
+  headerLogoAssetId?: string;
+  footerLogoAssetId?: string;
 }): Promise<GeneratedTemplate> {
   return api("/ai/templates/generate", { body: input, schema: generatedTemplateSchema });
 }

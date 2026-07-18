@@ -19,17 +19,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Code2,
+  FileCode,
+  LayoutTemplate,
+  Sparkles,
+  Upload,
+  Wand2,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type StartMode = EditorKind | "import" | "ai";
 
-const START_OPTIONS: { mode: StartMode; label: string; hint: string }[] = [
-  { mode: "ai", label: "✨ Generate with AI", hint: "Describe it, get a draft" },
-  { mode: "visual", label: "Visual builder", hint: "Drag-and-drop blocks (MJML)" },
-  { mode: "mjml", label: "MJML source", hint: "Write MJML directly" },
-  { mode: "html", label: "Blank HTML", hint: "Start from raw HTML5" },
-  { mode: "import", label: "Import HTML", hint: "Paste an existing HTML email" },
+const START_OPTIONS: { mode: StartMode; label: string; hint: string; icon: LucideIcon }[] = [
+  { mode: "ai", label: "Generate with AI", hint: "Describe it, get a draft", icon: Sparkles },
+  { mode: "visual", label: "Visual builder", hint: "Drag-and-drop blocks (MJML)", icon: LayoutTemplate },
+  { mode: "mjml", label: "MJML source", hint: "Write MJML directly", icon: Code2 },
+  { mode: "html", label: "Blank HTML", hint: "Start from raw HTML5", icon: FileCode },
+  { mode: "import", label: "Import HTML", hint: "Paste an existing HTML email", icon: Upload },
 ];
 
 export function NewTemplateDialog() {
@@ -42,6 +51,7 @@ export function NewTemplateDialog() {
   const [prompt, setPrompt] = useState("");
   const [brandColor, setBrandColor] = useState("#2563eb");
   const [videoUrl, setVideoUrl] = useState("");
+  const [advancedModel, setAdvancedModel] = useState(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,6 +69,7 @@ export function NewTemplateDialog() {
           brandColor,
           assetIds: selectedAssetIds,
           videoUrl: videoUrl.trim() || undefined,
+          useAdvancedModel: advancedModel,
         });
         return {
           editorKind: "mjml",
@@ -100,7 +111,10 @@ export function NewTemplateDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>New template</Button>
+        <Button variant="gradient">
+          <Sparkles className="size-4" />
+          New template
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -123,19 +137,28 @@ export function NewTemplateDialog() {
           <div className="space-y-2">
             <Label>Start from</Label>
             <div className="grid gap-2 sm:grid-cols-2">
-              {START_OPTIONS.map((opt) => (
-                <button
-                  key={opt.mode}
-                  type="button"
-                  onClick={() => setMode(opt.mode)}
-                  className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                    mode === opt.mode ? "border-primary bg-primary/5" : "hover:bg-muted"
-                  }`}
-                >
-                  <span className="font-medium">{opt.label}</span>
-                  <span className="block text-xs text-muted-foreground">{opt.hint}</span>
-                </button>
-              ))}
+              {START_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const active = mode === opt.mode;
+                return (
+                  <button
+                    key={opt.mode}
+                    type="button"
+                    onClick={() => setMode(opt.mode)}
+                    className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-all ${
+                      active
+                        ? "border-brand/40 bg-linear-to-br from-brand/10 to-brand-2/10 ring-1 ring-brand/25"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className={`mt-0.5 size-4 shrink-0 ${active ? "text-brand" : "text-muted-foreground"}`} />
+                    <span>
+                      <span className="block font-medium">{opt.label}</span>
+                      <span className="block text-xs text-muted-foreground">{opt.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -163,6 +186,42 @@ export function NewTemplateDialog() {
                     onChange={(e) => setBrandColor(e.target.value)}
                     className="h-7 w-10 rounded border"
                   />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Design model</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedModel(false)}
+                    className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                      !advancedModel
+                        ? "border-brand/40 bg-linear-to-br from-brand/10 to-brand-2/10 ring-1 ring-brand/25"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    <Sparkles className={`mt-0.5 size-4 shrink-0 ${!advancedModel ? "text-brand" : "text-muted-foreground"}`} />
+                    <span>
+                      <span className="block font-medium">Standard</span>
+                      <span className="block text-xs text-muted-foreground">Fast, great for most emails</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdvancedModel(true)}
+                    className={`flex items-start gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                      advancedModel
+                        ? "border-brand/40 bg-linear-to-br from-brand/10 to-brand-2/10 ring-1 ring-brand/25"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    <Wand2 className={`mt-0.5 size-4 shrink-0 ${advancedModel ? "text-brand" : "text-muted-foreground"}`} />
+                    <span>
+                      <span className="block font-medium">Advanced design</span>
+                      <span className="block text-xs text-muted-foreground">Slower, best for complex layouts</span>
+                    </span>
+                  </button>
                 </div>
               </div>
 

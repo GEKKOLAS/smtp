@@ -16,7 +16,13 @@ public sealed record GenerateTemplateCommand(
     string? Tone,
     IReadOnlyList<Guid> AssetIds,
     IReadOnlyList<string> DesiredVariables,
-    string? VideoUrl);
+    string? VideoUrl,
+    bool UseAdvancedModel = false,
+    string? CurrentMjml = null,
+    string? CurrentHtml = null,
+    Guid? BackgroundImageAssetId = null,
+    Guid? HeaderLogoAssetId = null,
+    Guid? FooterLogoAssetId = null);
 
 public sealed record GeneratedVariableDto(string Name, string Type, string Sample);
 
@@ -50,22 +56,21 @@ public sealed partial class GenerateTemplateHandler(
             throw new ValidationFailureLite("prompt", "A prompt of up to 2000 characters is required.");
         }
 
-        var assetUrls = await ResolveAssetUrlsAsync(command.AssetIds, ct);
+        var roleAssetIds = new[] { command.BackgroundImageAssetId, command.HeaderLogoAssetId, command.FooterLogoAssetId }
+            .Where(id => id.HasValue).Select(id => id!.Value);
+        var assetUrls = await ResolveAssetUrlsAsync(command.AssetIds.Concat(roleAssetIds).Distinct().ToList(), ct);
         var videoUrl = string.IsNullOrWhiteSpace(command.VideoUrl) ? null : command.VideoUrl.Trim();
         var videoThumbnailUrl = videoUrl is null ? null : DeriveVideoThumbnailUrl(videoUrl);
 
         var generated = await generator.GenerateAsync(
             new AiTemplateRequest(command.Prompt, command.BrandColor, command.Tone,
-                assetUrls.Values.ToList(), command.DesiredVariables, videoUrl, videoThumbnailUrl),
+                command.AssetIds.Select(id => assetUrls.GetValueOrDefault(id)).OfType<string>().ToList(),
+                command.DesiredVariables, videoUrl, videoThumbnailUrl,
+                command.UseAdvancedModel, command.CurrentMjml, command.CurrentHtml,
+                command.BackgroundImageAssetId is { } bgId ? assetUrls.GetValueOrDefault(bgId) : null,
+                command.HeaderLogoAssetId is { } hlId ? assetUrls.GetValueOrDefault(hlId) : null,
+                command.FooterLogoAssetId is { } flId ? assetUrls.GetValueOrDefault(flId) : null),
             ct);
-
-        // The generated MJML must compile; the scaffold always does, a real model
-        // occasionally won't (surfaced as 422 so the caller can regenerate).
-        var compiled = mjmlCompiler.Compile(generated.MjmlSource);
-        if (!compiled.Success)
-        {
-            throw new AiGenerationException("The generated template was not valid. Please try again.");
-        }
 
         var variables = generated.Variables
             .Select(v => new TemplateVariable(
@@ -74,10 +79,30 @@ public sealed partial class GenerateTemplateHandler(
                 Required: false, Default: null, Sample: v.Sample))
             .ToList();
 
+        // A template being edited as raw HTML has no MJML to compile — it renders
+        // straight through the HTML branch of the pipeline instead (spec 08 §2).
+        TemplateContent content;
+        if (command.CurrentHtml is not null)
+        {
+            content = new TemplateContent(
+                generated.Subject, generated.Preheader, EditorKind.Html, null, generated.MjmlSource, null,
+                variables, []);
+        }
+        else
+        {
+            // The generated MJML must compile; the scaffold always does, a real model
+            // occasionally won't (surfaced as 422 so the caller can regenerate).
+            var compiled = mjmlCompiler.Compile(generated.MjmlSource);
+            if (!compiled.Success)
+            {
+                throw new AiGenerationException("The generated template was not valid. Please try again.");
+            }
+            content = new TemplateContent(
+                generated.Subject, generated.Preheader, EditorKind.Mjml, generated.MjmlSource, compiled.Html, null,
+                variables, []);
+        }
+
         var previewVars = variables.ToDictionary(v => v.Name, v => (string?)v.Sample);
-        var content = new TemplateContent(
-            generated.Subject, generated.Preheader, EditorKind.Mjml, generated.MjmlSource, compiled.Html, null,
-            variables, []);
         var rendered = renderer.Render(new RenderRequest(content, previewVars, Strict: false,
             new Dictionary<Guid, string>()));
 
@@ -85,7 +110,7 @@ public sealed partial class GenerateTemplateHandler(
             generated.Subject,
             generated.Preheader,
             generated.MjmlSource,
-            compiled.Html,
+            content.HtmlBody,
             generated.Variables.Select(v => new GeneratedVariableDto(v.Name, v.Type, v.Sample)).ToList(),
             rendered.Html,
             generator.IsRealAi);

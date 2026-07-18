@@ -9,7 +9,14 @@ public sealed record AiTemplateRequest(
     IReadOnlyList<string> AssetUrls,
     IReadOnlyList<string> DesiredVariables,
     string? VideoUrl,
-    string? VideoThumbnailUrl);
+    string? VideoThumbnailUrl,
+    bool UseAdvancedModel = false,
+    string? CurrentMjml = null,
+    // Set instead of CurrentMjml when editing a raw-HTML (non-MJML) template.
+    string? CurrentHtml = null,
+    string? BackgroundImageUrl = null,
+    string? HeaderLogoUrl = null,
+    string? FooterLogoUrl = null);
 
 public sealed record AiVariable(string Name, string Type, string Sample);
 
