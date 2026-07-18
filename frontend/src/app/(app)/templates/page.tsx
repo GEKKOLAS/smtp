@@ -3,6 +3,7 @@
 import { archiveTemplate, deleteTemplate, duplicateTemplate, listTemplates } from "@/lib/api/templates";
 import { formatDate } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
+import { PageHeader } from "@/components/app/page-header";
 import { NewTemplateDialog } from "@/components/templates/new-template-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical } from "lucide-react";
+import { LayoutTemplate, MoreVertical } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -51,13 +52,12 @@ export default function TemplatesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
-          <p className="text-muted-foreground">Reusable, responsive email designs.</p>
-        </div>
-        <NewTemplateDialog />
-      </header>
+      <PageHeader
+        icon={LayoutTemplate}
+        title="Templates"
+        description="Reusable, responsive email designs."
+        action={<NewTemplateDialog />}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs value={tab} onValueChange={setTab}>

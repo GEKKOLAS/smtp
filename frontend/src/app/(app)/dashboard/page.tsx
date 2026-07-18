@@ -2,13 +2,23 @@
 
 import { listAccounts } from "@/lib/api/accounts";
 import { listSends } from "@/lib/api/sends";
+import { listTemplates } from "@/lib/api/templates";
 import { useSession } from "@/lib/hooks/use-session";
 import { queryKeys } from "@/lib/query/query-keys";
+import { PageHeader } from "@/components/app/page-header";
 import { SendStatusBadge } from "@/components/sends/send-status-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import { useQuery } from "@tanstack/react-query";
+import {
+  CheckCircle2,
+  LayoutDashboard,
+  LayoutTemplate,
+  Plug,
+  Send,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 const CHECKLIST = [
@@ -32,23 +42,69 @@ const CHECKLIST = [
   },
 ];
 
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex items-center gap-3.5">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand/15 to-brand-2/15 text-brand ring-1 ring-brand/20">
+          <Icon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-2xl font-semibold tracking-tight">{value}</p>
+          <p className="truncate text-xs text-muted-foreground">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const { data: user } = useSession();
   const { data: accounts } = useQuery({ queryKey: queryKeys.accounts, queryFn: listAccounts });
   const { data: sends } = useQuery({ queryKey: queryKeys.sends(), queryFn: () => listSends() });
+  const { data: templates } = useQuery({
+    queryKey: queryKeys.templates({ search: "", archived: false }),
+    queryFn: () => listTemplates({ archived: false }),
+  });
 
   const needsReconnect = accounts?.filter((a) => a.state === "needs_reconnect") ?? [];
   const recentSends = sends?.items.slice(0, 5) ?? [];
   const hasSetup = (accounts?.length ?? 0) > 0;
 
+  const deliveredRate = (() => {
+    const totals = sends?.items.reduce(
+      (acc, job) => ({
+        sent: acc.sent + job.recipientCounts.sent,
+        failed: acc.failed + job.recipientCounts.failed,
+      }),
+      { sent: 0, failed: 0 },
+    );
+    const total = (totals?.sent ?? 0) + (totals?.failed ?? 0);
+    return total > 0 ? `${Math.round(((totals?.sent ?? 0) / total) * 100)}%` : "—";
+  })();
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Welcome{user ? `, ${user.displayName.split(" ")[0]}` : ""}
-        </h1>
-        <p className="text-muted-foreground">Get set up in three steps.</p>
-      </header>
+      <PageHeader
+        icon={LayoutDashboard}
+        title={`Welcome${user ? `, ${user.displayName.split(" ")[0]}` : ""}`}
+        description="Get set up in three steps."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile icon={Plug} label="Connected accounts" value={String(accounts?.length ?? 0)} />
+        <StatTile icon={LayoutTemplate} label="Active templates" value={String(templates?.totalCount ?? 0)} />
+        <StatTile icon={Send} label="Total sends" value={String(sends?.totalCount ?? 0)} />
+        <StatTile icon={CheckCircle2} label="Delivered rate" value={deliveredRate} />
+      </div>
 
       {needsReconnect.length > 0 && (
         <Card className="border-destructive/40">

@@ -4,10 +4,12 @@ import { listAccounts } from "@/lib/api/accounts";
 import { oauthErrorMessage, providerLabels } from "@/lib/accounts-copy";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { Provider } from "@/lib/schemas/accounts";
+import { PageHeader } from "@/components/app/page-header";
 import { AccountCard } from "@/components/accounts/account-card";
 import { ConnectButtons } from "@/components/accounts/connect-buttons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { Plug } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
@@ -44,13 +46,11 @@ function AccountsInner() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Connected accounts</h1>
-        <p className="text-muted-foreground">
-          Link Gmail or Outlook to send from your own address. We request send-only access
-          and never see your password.
-        </p>
-      </header>
+      <PageHeader
+        icon={Plug}
+        title="Connected accounts"
+        description="Link Gmail or Outlook to send from your own address. We request send-only access and never see your password."
+      />
 
       <ConnectButtons />
 

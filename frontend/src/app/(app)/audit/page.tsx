@@ -1,9 +1,11 @@
 "use client";
 
 import { auditLabel, listAuditLogs } from "@/lib/api/audit";
+import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { ShieldCheck } from "lucide-react";
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -17,10 +19,11 @@ export default function AuditPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Security &amp; activity</h1>
-        <p className="text-muted-foreground">A record of security-relevant events on your account.</p>
-      </header>
+      <PageHeader
+        icon={ShieldCheck}
+        title="Security & activity"
+        description="A record of security-relevant events on your account."
+      />
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {isError && <p className="text-sm text-destructive">Could not load your activity.</p>}

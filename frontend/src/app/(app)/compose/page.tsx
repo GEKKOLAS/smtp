@@ -5,11 +5,13 @@ import { createSend, type RecipientInput } from "@/lib/api/sends";
 import { getTemplate, listTemplates } from "@/lib/api/templates";
 import { ApiError } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/query-keys";
+import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { PenSquare } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -93,10 +95,7 @@ function ComposeInner() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Compose</h1>
-        <p className="text-muted-foreground">Send a template to one or more recipients.</p>
-      </header>
+      <PageHeader icon={PenSquare} title="Compose" description="Send a template to one or more recipients." />
 
       {accounts.data && activeAccounts.length === 0 && (
         <Card>

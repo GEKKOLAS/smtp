@@ -3,10 +3,12 @@
 import { listSends } from "@/lib/api/sends";
 import { formatDate } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
+import { PageHeader } from "@/components/app/page-header";
 import { SendStatusBadge, isActiveStatus } from "@/components/sends/send-status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
+import { History } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -31,10 +33,7 @@ export default function SendsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Send history</h1>
-        <p className="text-muted-foreground">Every send and its per-recipient status.</p>
-      </header>
+      <PageHeader icon={History} title="Send history" description="Every send and its per-recipient status." />
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>

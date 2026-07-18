@@ -4,8 +4,10 @@ import { ApiKeysCard } from "@/components/settings/api-keys-card";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { PasswordForm } from "@/components/settings/password-form";
 import { SessionsCard } from "@/components/settings/sessions-card";
+import { PageHeader } from "@/components/app/page-header";
 import { useSession } from "@/lib/hooks/use-session";
 import { Separator } from "@/components/ui/separator";
+import { Settings as SettingsIcon } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: user } = useSession();
@@ -13,10 +15,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your profile and security.</p>
-      </header>
+      <PageHeader icon={SettingsIcon} title="Settings" description="Manage your profile and security." />
       <ProfileForm user={user} />
       <Separator />
       <PasswordForm />

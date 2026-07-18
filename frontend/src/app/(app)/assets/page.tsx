@@ -4,6 +4,7 @@ import { listAssets } from "@/lib/api/assets";
 import { formatBytes } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { Asset } from "@/lib/schemas/assets";
+import { PageHeader } from "@/components/app/page-header";
 import { AssetDetailSheet } from "@/components/assets/asset-detail-sheet";
 import { AssetThumb } from "@/components/assets/asset-thumb";
 import { UploadDropzone } from "@/components/assets/upload-dropzone";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Image as ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const TABS = [
@@ -37,12 +39,11 @@ export default function AssetsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Asset library</h1>
-        <p className="text-muted-foreground">
-          Upload images, GIFs, and files to use in your templates.
-        </p>
-      </header>
+      <PageHeader
+        icon={ImageIcon}
+        title="Asset library"
+        description="Upload images, GIFs, and files to use in your templates."
+      />
 
       <UploadDropzone onUploaded={refresh} />
 
