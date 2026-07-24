@@ -1,12 +1,24 @@
 using MailTemplateHub.Application.Abstractions.Rendering;
+using MailTemplateHub.Application.Common;
 using MailTemplateHub.Domain.Enums;
 using MailTemplateHub.Infrastructure.Rendering;
+using Microsoft.Extensions.Options;
 
 namespace MailTemplateHub.UnitTests.Rendering;
 
 public class TemplateRendererTests
 {
-    private readonly TemplateRenderer _renderer = new(new MjmlNetCompiler(), new GanssHtmlSanitizer());
+    private static readonly StorageOptions Storage = new()
+    {
+        ServiceUrl = "http://localhost:9000",
+        AccessKey = "k",
+        SecretKey = "s",
+        PublicBucket = "mth-public",
+        PublicBaseUrl = "https://cdn.example.com/mth-public",
+    };
+
+    private readonly TemplateRenderer _renderer =
+        new(new MjmlNetCompiler(), new GanssHtmlSanitizer(), Options.Create(Storage));
 
     private static TemplateContent Content(
         string subject = "Hello {{firstName}}",
@@ -121,5 +133,50 @@ public class TemplateRendererTests
         var first = _renderer.Render(Request(Content()));
         var second = _renderer.Render(Request(Content()));
         Assert.Equal(first.Html, second.Html);
+    }
+
+    [Fact]
+    public void Rewrites_baked_in_public_asset_urls_to_current_public_base()
+    {
+        // A URL from when the public base was localhost is swapped for the current one,
+        // so images resolve in a real inbox instead of pointing at the author's machine.
+        var content = Content(
+            html: "<img src=\"http://localhost:9000/mth-public/assets/u/a/logo.png\" alt=\"logo\">");
+        var result = _renderer.Render(Request(content));
+
+        Assert.Contains("https://cdn.example.com/mth-public/assets/u/a/logo.png", result.Html);
+        Assert.DoesNotContain("localhost:9000", result.Html);
+    }
+
+    [Fact]
+    public void Leaves_non_public_bucket_urls_untouched()
+    {
+        var content = Content(html: "<img src=\"https://other.example/pic.png\" alt=\"x\">");
+        var result = _renderer.Render(Request(content));
+
+        Assert.Contains("https://other.example/pic.png", result.Html);
+    }
+
+    [Fact]
+    public void Warns_on_fabricated_placeholder_image_url()
+    {
+        // The classic AI slip: an <img> pointing at a made-up host that resolves to
+        // nothing in a real inbox. Must be surfaced so it's caught before sending.
+        var content = Content(html: "<img src=\"https://YOUR-DOMAIN.com/email-assets/header.jpg\" alt=\"h\">");
+        var result = _renderer.Render(Request(content));
+
+        Assert.Contains(result.Warnings, w => w.Code == "image.placeholder");
+    }
+
+    [Fact]
+    public void Does_not_warn_on_configured_public_base_that_looks_example_ish()
+    {
+        // The app's own public base is cdn.example.com — a legit asset host that must
+        // not be mistaken for a placeholder just because it contains "example.com".
+        var content = Content(
+            html: "<img src=\"http://localhost:9000/mth-public/assets/u/a/logo.png\" alt=\"logo\">");
+        var result = _renderer.Render(Request(content));
+
+        Assert.DoesNotContain(result.Warnings, w => w.Code == "image.placeholder");
     }
 }

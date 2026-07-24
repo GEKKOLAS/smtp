@@ -101,7 +101,18 @@ internal sealed class AnthropicTemplateGenerator(
         and wrap the whole section/button in a link (`href`) to the video URL so clicking anywhere
         takes the reader to the actual video off-platform. Label it clearly, e.g. "▶ Watch the video".
 
-        - Never invent external image/video URLs — only use ones explicitly given to you.
+        - CRITICAL — NEVER fabricate, guess, or use placeholder image/video URLs. The ONLY image
+          URLs you may ever put in src/url()/background-url are the exact, complete URLs explicitly
+          provided in this message (background image, header logo, footer logo, other image URLs,
+          video thumbnail). If NONE were provided, your email MUST contain ZERO <img>/<mj-image>
+          tags and ZERO background-url attributes. Absolutely forbidden — a broken image in a real
+          inbox looks worse than no image: any made-up domain or path such as
+          https://YOUR-DOMAIN.com/..., example.com, your-cdn, /email-assets/..., /images/...,
+          placeholder/via.placeholder/picsum/unsplash/lorempixel, or any host you were not given.
+          When a design calls for a hero/logo/photo but no real URL exists, render that region as a
+          solid or gradient color band (mj-section background-color / css-class gradient) with a
+          bold text treatment (e.g. the brand name or initials as large styled mj-text) INSTEAD of
+          an image. A polished color-and-type block always beats a broken image icon.
         - Keep everything single-column and mobile-friendly; test that nothing depends on
           absolute positioning or JS.
 

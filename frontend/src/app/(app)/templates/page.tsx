@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LayoutTemplate, MoreVertical } from "lucide-react";
+import { LayoutTemplate, MoreVertical, Send } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -106,6 +106,12 @@ export default function TemplatesPage() {
                   <div className="flex shrink-0 items-center gap-2">
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/templates/${template.id}/edit`}>Edit</Link>
+                    </Button>
+                    <Button asChild variant="gradient" size="sm">
+                      <Link href={`/compose?templateId=${template.id}`}>
+                        <Send className="size-4" />
+                        Send
+                      </Link>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Send } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -196,6 +197,17 @@ export function TemplateEditor({ template }: { template: Template }) {
             templateId={template.id}
             onRestored={() => queryClient.invalidateQueries({ queryKey: queryKeys.template(template.id) })}
           />
+          {/* Send to real recipients: hands off to the full Compose flow (account
+              picker, recipients, per-send variables, scheduling) with this
+              template preselected. Sends the saved version — save first to include
+              in-progress edits. Always enabled so the path is never hidden (the
+              visual editor marks the template dirty on load, which must not gate it). */}
+          <Button asChild variant="gradient" size="sm">
+            <Link href={`/compose?templateId=${template.id}`}>
+              <Send className="size-4" />
+              Send
+            </Link>
+          </Button>
           <Button onClick={() => save.mutate()} disabled={save.isPending || !dirty}>
             {save.isPending ? "Saving…" : "Save version"}
           </Button>

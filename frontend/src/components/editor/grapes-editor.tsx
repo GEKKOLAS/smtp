@@ -3,6 +3,7 @@
 import { listAssets, setAssetVisibility, uploadFile } from "@/lib/api/assets";
 import { useEffect, useRef } from "react";
 import "grapesjs/dist/css/grapes.min.css";
+import "./grapes-editor-theme.css";
 
 interface GrapesEditorProps {
   initialMjml: string;
@@ -38,7 +39,10 @@ export function GrapesEditor({ initialMjml, onChange }: GrapesEditorProps) {
         height: "100%",
         storageManager: false,
         plugins: [mjmlPlugin],
-        pluginsOpts: { [mjmlPlugin as unknown as string]: {} },
+        // useCustomTheme=false: the plugin otherwise injects a runtime <style>
+        // with hard-coded colors (.gjs-one-bg etc.) that overrides our
+        // token-driven theme in grapes-editor-theme.css.
+        pluginsOpts: { [mjmlPlugin as unknown as string]: { useCustomTheme: false } },
         assetManager: {
           uploadFile: async (event: DragEvent | Event) => {
             const input = (event as DragEvent).dataTransfer ?? (event.target as HTMLInputElement);

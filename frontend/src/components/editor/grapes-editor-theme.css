@@ -1,0 +1,274 @@
+/*
+ * Re-themes the GrapesJS chrome to the app's design system. GrapesJS 0.23's own
+ * stylesheet is driven by --gjs-* custom properties, so most of the work is
+ * pointing those at our tokens (globals.css); the selector overrides below are
+ * only for shape/spacing polish the variables can't express. Because every
+ * value resolves through var(--card)/var(--brand)/…, the editor follows the
+ * app's light/dark toggle automatically.
+ */
+
+.gjs-editor-cont {
+  /* Panel surfaces */
+  --gjs-main-color: var(--card);
+  --gjs-primary-color: var(--card);
+  --gjs-main-dark-color: var(--border);
+  --gjs-main-light-color: var(--muted);
+  --gjs-secondary-dark-color: var(--muted);
+  --gjs-secondary-light-color: var(--muted-foreground);
+  --gjs-soft-light-color: var(--muted);
+  --gjs-light-border: var(--border);
+
+  /* Text */
+  --gjs-font-color: var(--foreground);
+  --gjs-font-color-active: var(--foreground);
+  --gjs-secondary-color: var(--muted-foreground);
+  --gjs-main-font: var(--font-sans);
+  --gjs-font-size: 0.75rem;
+  --gjs-arrow-color: var(--muted-foreground);
+
+  /* Accents: active states, selection outlines, highlights */
+  --gjs-tertiary-color: var(--brand);
+  --gjs-quaternary-color: var(--brand);
+  --gjs-color-highlight: var(--brand);
+  --gjs-color-blue: var(--brand-2);
+  --gjs-color-warn: var(--warm);
+  --gjs-color-yellow: var(--warm);
+}
+
+/* ---------- Top toolbar ---------- */
+
+.gjs-pn-panel {
+  padding: 6px 8px;
+}
+
+.gjs-pn-btn {
+  border-radius: 8px;
+  font-size: 15px;
+  color: var(--muted-foreground);
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.gjs-pn-btn:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+.gjs-pn-btn.gjs-pn-active {
+  background-color: color-mix(in oklab, var(--brand) 15%, transparent);
+  color: var(--brand);
+  box-shadow: none;
+}
+
+/* The views container's default 42px top offset no longer clears the (taller)
+   restyled button row, clipping its first line under the toolbar. */
+.gjs-pn-views-container {
+  padding-top: 48px;
+  background-color: var(--card);
+}
+
+.gjs-pn-views {
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Canvas: floating page on a work surface (the Canva look) ---------- */
+
+.gjs-cv-canvas {
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 0%, color-mix(in oklab, var(--brand) 7%, transparent), transparent),
+    radial-gradient(ellipse 50% 60% at 90% 100%, color-mix(in oklab, var(--brand-2) 6%, transparent), transparent),
+    var(--background);
+}
+
+.gjs-cv-canvas-bg {
+  background-color: transparent;
+}
+
+.gjs-frame-wrapper {
+  padding: 20px 24px 28px;
+  box-sizing: border-box;
+}
+
+.gjs-frame {
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 12px 40px -12px rgb(0 0 0 / 0.45);
+  background-color: #fff;
+}
+
+/* ---------- Blocks panel ---------- */
+
+.gjs-blocks-c {
+  gap: 8px;
+  padding: 8px;
+  justify-content: center;
+}
+
+.gjs-block {
+  width: 44%;
+  min-height: 76px;
+  margin: 0;
+  padding: 0.85em 0.5em;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background-color: var(--muted);
+  box-shadow: none;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  transition: border-color 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.gjs-block:hover {
+  border-color: color-mix(in oklab, var(--brand) 45%, transparent);
+  color: var(--foreground);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -8px color-mix(in oklab, var(--brand) 55%, transparent);
+}
+
+.gjs-block-svg {
+  color: currentcolor;
+}
+
+.gjs-block-label {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.gjs-block-category .gjs-title,
+.gjs-sm-sector-title,
+.gjs-trait-category .gjs-title {
+  background-color: transparent;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+}
+
+/* ---------- Layers ---------- */
+
+.gjs-layer-item {
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.gjs-layer:hover > .gjs-layer-item {
+  background-color: var(--muted);
+}
+
+.gjs-layer.gjs-selected > .gjs-layer-item {
+  background-color: color-mix(in oklab, var(--brand) 14%, transparent);
+}
+
+/* ---------- Style manager / traits inputs ---------- */
+
+.gjs-field {
+  background-color: var(--muted);
+  border-radius: 8px;
+  color: var(--foreground);
+}
+
+.gjs-field input,
+.gjs-field select,
+.gjs-field textarea {
+  color: var(--foreground);
+}
+
+.gjs-select option,
+.gjs-field select option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+.gjs-sm-sector .gjs-sm-field input,
+.gjs-clm-select input,
+.gjs-clm-field input {
+  color: var(--foreground);
+}
+
+.gjs-btn-prim {
+  border-radius: 8px;
+  background-color: color-mix(in oklab, var(--brand) 18%, transparent);
+  color: var(--brand);
+  transition: background-color 0.15s;
+}
+
+.gjs-btn-prim:hover {
+  background-color: color-mix(in oklab, var(--brand) 28%, transparent);
+}
+
+/* ---------- Asset manager ---------- */
+
+.gjs-am-assets-cont {
+  border-radius: 10px;
+  background-color: var(--muted);
+}
+
+.gjs-am-asset {
+  border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.gjs-am-asset:hover {
+  background-color: color-mix(in oklab, var(--brand) 10%, transparent);
+}
+
+.gjs-am-file-uploader > form {
+  background-color: var(--muted);
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+}
+
+/* ---------- Modals (import/export dialogs GrapesJS renders itself) ---------- */
+
+.gjs-mdl-dialog {
+  border-radius: 14px;
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.6);
+}
+
+.gjs-mdl-header {
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- Scrollbars inside the editor chrome ---------- */
+
+.gjs-editor-cont ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gjs-editor-cont ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gjs-editor-cont ::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 999px;
+}
+
+/* ---------- Selection chrome over the canvas ---------- */
+
+.gjs-badge {
+  border-radius: 6px;
+  background-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+.gjs-toolbar {
+  border-radius: 8px;
+  background-color: var(--brand);
+}
+
+.gjs-toolbar-item {
+  transition: opacity 0.15s;
+}
+
+.gjs-resizer-h {
+  border: 2px solid var(--brand);
+  background-color: #fff;
+  border-radius: 3px;
+}
