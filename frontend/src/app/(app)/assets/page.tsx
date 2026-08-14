@@ -7,6 +7,7 @@ import type { Asset } from "@/lib/schemas/assets";
 import { PageHeader } from "@/components/app/page-header";
 import { AssetDetailSheet } from "@/components/assets/asset-detail-sheet";
 import { AssetThumb } from "@/components/assets/asset-thumb";
+import { GenerateImageDialog } from "@/components/assets/generate-image-dialog";
 import { UploadDropzone } from "@/components/assets/upload-dropzone";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ export default function AssetsPage() {
         icon={ImageIcon}
         title="Asset library"
         description="Upload images, GIFs, and files to use in your templates."
+        action={<GenerateImageDialog onGenerated={refresh} />}
       />
 
       <UploadDropzone onUploaded={refresh} />

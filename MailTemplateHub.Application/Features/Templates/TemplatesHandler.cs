@@ -38,6 +38,7 @@ public sealed class TemplatesHandler(
             .Select(t => new TemplateSummaryDto(
                 t.Id, t.Name, t.Description, t.IsArchived,
                 t.CurrentVersion == null ? (int?)null : t.CurrentVersion.VersionNumber,
+                t.CurrentVersionId,
                 t.UpdatedAt))
             .ToListAsync(ct);
 

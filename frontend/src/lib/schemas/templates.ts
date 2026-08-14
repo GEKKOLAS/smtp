@@ -55,6 +55,7 @@ export const templateSummarySchema = z.object({
   description: z.string().nullable(),
   isArchived: z.boolean(),
   currentVersionNumber: z.number().nullable(),
+  currentVersionId: z.string().nullable(),
   updatedAt: z.string(),
 });
 export type TemplateSummary = z.infer<typeof templateSummarySchema>;

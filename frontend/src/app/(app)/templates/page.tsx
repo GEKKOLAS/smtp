@@ -5,6 +5,7 @@ import { formatDate } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
 import { PageHeader } from "@/components/app/page-header";
 import { NewTemplateDialog } from "@/components/templates/new-template-dialog";
+import { TemplatePreviewThumb } from "@/components/templates/template-preview-thumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -87,14 +88,25 @@ export default function TemplatesPage() {
       )}
 
       {data && data.items.length > 0 && (
-        <ul className="space-y-2">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.items.map((template) => (
             <li key={template.id}>
-              <Card>
-                <CardContent className="flex items-center justify-between gap-4 py-3">
-                  <Link href={`/templates/${template.id}/edit`} className="min-w-0 flex-1">
+              <Card className="flex h-full flex-col overflow-hidden py-0">
+                <Link
+                  href={`/templates/${template.id}/edit`}
+                  className="block border-b border-border/70 transition-opacity hover:opacity-90"
+                >
+                  <TemplatePreviewThumb versionId={template.currentVersionId} />
+                </Link>
+                <CardContent className="flex flex-1 flex-col gap-3 py-3">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate font-medium">{template.name}</span>
+                      <Link
+                        href={`/templates/${template.id}/edit`}
+                        className="truncate font-medium hover:underline"
+                      >
+                        {template.name}
+                      </Link>
                       {template.currentVersionNumber && (
                         <Badge variant="secondary">v{template.currentVersionNumber}</Badge>
                       )}
@@ -102,12 +114,12 @@ export default function TemplatesPage() {
                     <p className="truncate text-xs text-muted-foreground">
                       {template.description || "No description"} · updated {formatDate(template.updatedAt)}
                     </p>
-                  </Link>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Button asChild variant="outline" size="sm">
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button asChild variant="outline" size="sm" className="flex-1">
                       <Link href={`/templates/${template.id}/edit`}>Edit</Link>
                     </Button>
-                    <Button asChild variant="gradient" size="sm">
+                    <Button asChild variant="gradient" size="sm" className="flex-1">
                       <Link href={`/compose?templateId=${template.id}`}>
                         <Send className="size-4" />
                         Send

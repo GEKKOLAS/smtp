@@ -1,3 +1,4 @@
+using MailTemplateHub.Application.Abstractions.Ai;
 using MailTemplateHub.Application.Features.Ai;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,4 +41,18 @@ public sealed class AiController(GenerateTemplateHandler handler) : ControllerBa
                 request.UseAdvancedModel, request.CurrentMjml, request.CurrentHtml,
                 request.BackgroundImageAssetId, request.HeaderLogoAssetId, request.FooterLogoAssetId),
             ct));
+
+    public sealed record GenerateImageRequest(string Prompt, string? Size);
+
+    /// <summary>Generates an image from a prompt and saves it as a ready, public asset.</summary>
+    [HttpPost("images/generate")]
+    [EnableRateLimiting("ai")]
+    public async Task<IActionResult> GenerateImage(
+        GenerateImageRequest request, [FromServices] GenerateImageHandler imageHandler, CancellationToken ct)
+        => Ok(await imageHandler.HandleAsync(new GenerateImageCommand(request.Prompt, request.Size), ct));
+
+    /// <summary>Which optional AI features are configured, so the UI can show/hide them.</summary>
+    [HttpGet("capabilities")]
+    public IActionResult Capabilities([FromServices] IAiImageGenerator imageGenerator)
+        => Ok(new { imageGeneration = imageGenerator.IsConfigured });
 }

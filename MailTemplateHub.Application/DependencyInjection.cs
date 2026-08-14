@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<SendJobsHandler>();
         services.AddScoped<AuditLogsHandler>();
         services.AddScoped<GenerateTemplateHandler>();
+        services.AddScoped<GenerateImageHandler>();
         services.AddScoped<ApiKeysHandler>();
 
         return services;

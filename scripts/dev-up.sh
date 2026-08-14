@@ -37,44 +37,18 @@ if ! docker info >/dev/null 2>&1; then
   until docker info >/dev/null 2>&1; do sleep 3; done
 fi
 
-echo "==> Starting infra (postgres, minio, wiremock)..."
-docker compose up -d >/dev/null
-
-# ---- Image tunnel (optional but needed for images to load in real inboxes) ----
-PUBLIC_BASE="http://localhost:9000/mth-public"
-CF_BIN=""
-if command -v cloudflared >/dev/null 2>&1; then CF_BIN="cloudflared"; elif [ -x "$CLOUDFLARED" ]; then CF_BIN="$CLOUDFLARED"; fi
-
-if [ -n "$CF_BIN" ]; then
-  echo "==> Starting image tunnel (cloudflared -> MinIO :9000)..."
-  : > "$LOGDIR/tunnel.log"
-  "$CF_BIN" tunnel --url http://localhost:9000 >>"$LOGDIR/tunnel.log" 2>&1 &
-  echo "$!" > "$LOGDIR/tunnel.pid"
-  URL=""
-  for _ in $(seq 1 40); do
-    URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$LOGDIR/tunnel.log" | head -1)"
-    [ -n "$URL" ] && break
-    sleep 1
-  done
-  if [ -n "$URL" ]; then
-    PUBLIC_BASE="$URL/mth-public"
-    echo "    Tunnel ready: $URL"
-  else
-    echo "    WARN: tunnel URL not detected in time; images may not load remotely."
-    echo "          (see $LOGDIR/tunnel.log)"
-  fi
-else
-  echo "==> cloudflared not found; skipping image tunnel."
-  echo "    Text/layout emails still send fine, but images won't load in real inboxes."
-  echo "    Install: download cloudflared-windows-amd64.exe to \$HOME/cloudflared.exe"
-fi
+# Public asset storage now lives in Cloudflare R2 (a permanent, always-on public
+# URL), configured in dotnet user-secrets (Storage:*). No tunnel/MinIO needed for
+# images to load in real inboxes, so we only start the DB and the provider doubles.
+echo "==> Starting infra (postgres, wiremock)..."
+docker compose up -d postgres wiremock >/dev/null
 
 # ---- Backend ----
+# Storage (R2) comes from user-secrets; nothing to override here.
 echo "==> Starting backend on :$BACKEND_PORT ..."
 : > "$LOGDIR/backend.log"
 ASPNETCORE_ENVIRONMENT=Development \
 ASPNETCORE_URLS="http://localhost:$BACKEND_PORT" \
-Storage__PublicBaseUrl="$PUBLIC_BASE" \
   dotnet run --project MailTemplateHub.Api --no-launch-profile >>"$LOGDIR/backend.log" 2>&1 &
 echo "$!" > "$LOGDIR/backend.pid"
 
@@ -98,6 +72,6 @@ echo ""
 echo "  ✅ Ready"
 echo "  App:     http://localhost:$FRONTEND_PORT"
 echo "  API:     http://localhost:$BACKEND_PORT   (health: /healthz)"
-echo "  Images:  $PUBLIC_BASE"
-echo "  Logs:    $LOGDIR/{backend,frontend,tunnel}.log"
+echo "  Images:  Cloudflare R2 (permanent public URLs, from user-secrets)"
+echo "  Logs:    $LOGDIR/{backend,frontend}.log"
 echo "  Stop:    bash scripts/dev-down.sh"

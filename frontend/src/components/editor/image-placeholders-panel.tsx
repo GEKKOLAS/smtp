@@ -2,8 +2,11 @@
 
 import { listAssets } from "@/lib/api/assets";
 import { detectPlaceholders, type PlaceholderRole } from "@/lib/mjml-placeholders";
+import { GenerateImageDialog } from "@/components/assets/generate-image-dialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
 import { useMemo } from "react";
 
 const ROLES: { role: PlaceholderRole; label: string; hint: string }[] = [
@@ -19,6 +22,7 @@ export function ImagePlaceholdersPanel({
   currentMjml: string;
   onChange: (role: PlaceholderRole, imageUrl: string | null) => void;
 }) {
+  const queryClient = useQueryClient();
   const assetPicker = useQuery({
     queryKey: ["assets", "picker", "public-image"],
     queryFn: () => listAssets({ kind: "image", pageSize: 24 }),
@@ -29,10 +33,20 @@ export function ImagePlaceholdersPanel({
   return (
     <div className="space-y-4 p-3">
       <p className="text-xs text-muted-foreground">
-        Assign images directly — no AI involved. Only public assets can be used here, since their
-        URL is permanent.{" "}
-        {publicAssets.length === 0 && "Make an asset public from the Assets page to use it."}
+        Assign images to each slot. Pick one from your library, or generate a new one with AI —
+        then it&apos;s ready to use here.{" "}
+        {publicAssets.length === 0 && "You can also make an asset public from the Assets page."}
       </p>
+
+      <GenerateImageDialog
+        onGenerated={() => queryClient.invalidateQueries({ queryKey: ["assets"] })}
+        trigger={
+          <Button variant="gradient" size="sm" className="w-full">
+            <Sparkles className="size-4" />
+            Generate an image with AI
+          </Button>
+        }
+      />
       {ROLES.map(({ role, label, hint }) => {
         const selectedUrl = current[role];
         return (

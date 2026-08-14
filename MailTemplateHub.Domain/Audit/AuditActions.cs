@@ -18,6 +18,7 @@ public static class AuditActions
     public const string TokenRefreshFailed = "token.refresh_failed";
 
     public const string AssetUploaded = "asset.uploaded";
+    public const string AssetGenerated = "asset.generated";
     public const string AssetDeleted = "asset.deleted";
     public const string AssetRejected = "asset.rejected";
 

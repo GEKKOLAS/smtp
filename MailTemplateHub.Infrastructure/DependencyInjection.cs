@@ -87,6 +87,19 @@ public static class DependencyInjection
         {
             services.AddScoped<IAiTemplateGenerator, ScaffoldTemplateGenerator>();
         }
+
+        // Image generation (OpenAI gpt-image-1) when a key is set; disabled otherwise.
+        services.AddOptions<ImageGenerationOptions>().BindConfiguration(ImageGenerationOptions.SectionName);
+        if (!string.IsNullOrWhiteSpace(configuration[$"{ImageGenerationOptions.SectionName}:ApiKey"]))
+        {
+            services.AddHttpClient<OpenAiImageGenerator>(client =>
+                client.Timeout = TimeSpan.FromSeconds(120));
+            services.AddScoped<IAiImageGenerator>(sp => sp.GetRequiredService<OpenAiImageGenerator>());
+        }
+        else
+        {
+            services.AddScoped<IAiImageGenerator, DisabledImageGenerator>();
+        }
     }
 
     private static void AddSending(IServiceCollection services, IConfiguration configuration)

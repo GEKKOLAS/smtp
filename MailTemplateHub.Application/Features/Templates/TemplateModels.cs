@@ -26,7 +26,7 @@ public sealed record TemplateContentInput(
 
 public sealed record TemplateSummaryDto(
     Guid Id, string Name, string? Description, bool IsArchived,
-    int? CurrentVersionNumber, DateTimeOffset UpdatedAt);
+    int? CurrentVersionNumber, Guid? CurrentVersionId, DateTimeOffset UpdatedAt);
 
 public sealed record TemplateAssetDto(Guid AssetId, string Usage, string? ContentId);
 
