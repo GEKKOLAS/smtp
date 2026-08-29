@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CornerUpLeft } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -60,6 +61,12 @@ export default function SendDetailPage() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          {job.isReply && (
+            <Badge variant="secondary" className="gap-1">
+              <CornerUpLeft className="size-3" />
+              Reply
+            </Badge>
+          )}
           <SendStatusBadge status={job.status} />
           {canCancel && (
             <Button variant="outline" size="sm" onClick={() => cancel.mutate()} disabled={cancel.isPending}>

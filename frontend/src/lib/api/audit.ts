@@ -51,6 +51,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "template.archived": "Template archived",
   "template.deleted": "Template deleted",
   "template.restored": "Template restored",
+  "inbox.message_read": "Inbox message opened",
   "send.created": "Send created",
   "send.scheduled": "Send scheduled",
   "send.cancelled": "Send cancelled",

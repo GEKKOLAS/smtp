@@ -48,6 +48,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public RecordingEmailSender EmailSender { get; } = new();
     public StubOAuthHandler OAuth { get; } = new();
     public FakeEmailProviderClient Provider { get; } = new();
+    public FakeInboxClient Inbox { get; } = new();
 
     // Build an explicit http URL; a bare host:port makes the S3 SDK assume https,
     // which fails against MinIO's plain-HTTP endpoint.
@@ -85,10 +86,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // (the in-memory config below is only merged for post-build option reads).
         builder.UseSetting("Jobs:RunInProcess", "false");
 
-        // The Api assembly loads dev user-secrets (which may hold a real Anthropic
-        // key); blank it so tests always use the scaffold generator and never
-        // spend real API credit.
+        // The Api assembly loads dev user-secrets (which may hold real provider
+        // keys); blank them so tests always take the disabled/scaffold path and
+        // never spend real API credit.
         builder.UseSetting("Ai:ApiKey", "");
+        builder.UseSetting("ImageGeneration:ApiKey", "");
 
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
@@ -115,6 +117,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["OAuth:Google:Scopes:1"] = "email",
                 ["OAuth:Google:Scopes:2"] = "profile",
                 ["OAuth:Google:Scopes:3"] = "https://www.googleapis.com/auth/gmail.send",
+                ["OAuth:Google:Scopes:4"] = "https://www.googleapis.com/auth/gmail.readonly",
 
                 ["OAuth:Microsoft:ClientId"] = "test-ms-client",
                 ["OAuth:Microsoft:ClientSecret"] = "test-ms-secret",
@@ -125,6 +128,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["OAuth:Microsoft:Scopes:1"] = "offline_access",
                 ["OAuth:Microsoft:Scopes:2"] = "User.Read",
                 ["OAuth:Microsoft:Scopes:3"] = "Mail.Send",
+                ["OAuth:Microsoft:Scopes:4"] = "Mail.Read",
 
                 ["Storage:ServiceUrl"] = MinioEndpoint,
                 ["Storage:AccessKey"] = "minioadmin",
@@ -151,6 +155,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.RemoveAll<IEmailProviderClientFactory>();
             services.AddSingleton(Provider);
             services.AddSingleton<IEmailProviderClientFactory>(new FakeProviderClientFactory(Provider));
+            services.RemoveAll<IInboxProviderClientFactory>();
+            services.AddSingleton(Inbox);
+            services.AddSingleton<IInboxProviderClientFactory>(new FakeInboxClientFactory(Inbox));
             services.RemoveAll<IBackgroundJobScheduler>();
             services.AddScoped<IBackgroundJobScheduler, SynchronousJobScheduler>();
         });

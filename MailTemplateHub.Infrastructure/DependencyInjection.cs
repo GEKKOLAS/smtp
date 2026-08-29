@@ -113,6 +113,13 @@ public static class DependencyInjection
         services.AddScoped<IEmailProviderClient>(sp => sp.GetRequiredService<GmailEmailProviderClient>());
         services.AddScoped<IEmailProviderClient>(sp => sp.GetRequiredService<OutlookEmailProviderClient>());
         services.AddScoped<IEmailProviderClientFactory, EmailProviderClientFactory>();
+
+        services.AddHttpClient<GmailInboxClient>();
+        services.AddHttpClient<OutlookInboxClient>();
+        services.AddScoped<IInboxProviderClient>(sp => sp.GetRequiredService<GmailInboxClient>());
+        services.AddScoped<IInboxProviderClient>(sp => sp.GetRequiredService<OutlookInboxClient>());
+        services.AddScoped<IInboxProviderClientFactory, InboxProviderClientFactory>();
+
         services.AddScoped<IEmailSendService, EmailSendService>();
         services.AddScoped<SendEmailJob>();
         services.AddScoped<PromoteScheduledSendsJob>();

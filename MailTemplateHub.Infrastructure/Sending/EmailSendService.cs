@@ -156,6 +156,15 @@ internal sealed class EmailSendService(
         var rendered = renderer.Render(new RenderRequest(content, vars, Strict: false, assets.Urls));
 
         var headers = new Dictionary<string, string> { ["X-MailTemplateHub-Ref"] = recipient.Id.ToString() };
+
+        // Threading headers (RFC 5322 §3.6.4): every mail client files the reply
+        // under the original conversation on these, Gmail additionally on threadId.
+        if (job.ReplyToInternetMessageId is { Length: > 0 } parentId)
+        {
+            headers["In-Reply-To"] = parentId;
+            headers["References"] = job.ReplyToReferences is { Length: > 0 } references ? references : parentId;
+        }
+
         return new OutgoingEmail(
             new Application.Abstractions.Email.MailboxAddress(account.EmailAddress, null),
             [new Application.Abstractions.Email.MailboxAddress(recipient.EmailAddress, recipient.DisplayName)],
@@ -164,7 +173,8 @@ internal sealed class EmailSendService(
             rendered.Text,
             assets.Inline,
             assets.Attachments,
-            headers);
+            headers,
+            job.ReplyToThreadId);
     }
 
     private async Task<SendAssets> LoadAssetsAsync(EmailSendJob job, CancellationToken ct)

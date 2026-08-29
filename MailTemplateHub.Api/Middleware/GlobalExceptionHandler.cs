@@ -26,6 +26,7 @@ internal sealed class GlobalExceptionHandler(
             NotFoundException notFound => (StatusCodes.Status404NotFound, notFound.Message, notFound.Code),
             UnauthorizedAppException unauthorized => (StatusCodes.Status401Unauthorized, unauthorized.Message, unauthorized.Code),
             ConflictException conflict => (StatusCodes.Status409Conflict, conflict.Message, conflict.Code),
+            ProviderUnavailableException provider => (StatusCodes.Status502BadGateway, provider.Message, provider.Code),
             // All remaining AppException subtypes (asset/render/content validation) are 422.
             AppException app => (StatusCodes.Status422UnprocessableEntity, app.Message, app.Code),
             DomainException domain => (StatusCodes.Status400BadRequest, domain.Message, domain.Code),

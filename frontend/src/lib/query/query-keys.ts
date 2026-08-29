@@ -10,4 +10,7 @@ export const queryKeys = {
   templateVersions: (id: string) => ["template-versions", id] as const,
   sends: (status?: string) => ["sends", status ?? "all"] as const,
   send: (id: string) => ["send", id] as const,
+  inbox: (accountId: string, search?: string) => ["inbox", accountId, search ?? ""] as const,
+  inboxMessage: (accountId: string, messageId: string) =>
+    ["inbox-message", accountId, messageId] as const,
 };

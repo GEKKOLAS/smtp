@@ -14,7 +14,10 @@ public sealed record AccountDto(
     bool IsDefault,
     IReadOnlyList<string> GrantedScopes,
     DateTimeOffset ConnectedAt,
-    DateTimeOffset? LastUsedAt)
+    DateTimeOffset? LastUsedAt,
+    // Inbox reading is a separate consent from sending, so accounts connected
+    // before it existed (or where the user declined it) report false here.
+    bool CanReadInbox)
 {
     public static AccountDto From(ConnectedEmailAccount a) => new(
         a.Id,
@@ -31,5 +34,7 @@ public sealed record AccountDto(
         a.IsDefault,
         a.GrantedScopes,
         a.ConnectedAt,
-        a.LastUsedAt);
+        a.LastUsedAt,
+        a.State == AccountState.Active
+        && Common.ProviderScopes.HasScope(a.GrantedScopes, Common.ProviderScopes.InboxReadScope(a.Provider)));
 }

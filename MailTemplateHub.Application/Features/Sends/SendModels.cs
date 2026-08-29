@@ -17,7 +17,11 @@ public sealed record CreateSendCommand(
     IReadOnlyDictionary<string, string?> Variables,
     IReadOnlyList<SendAttachmentInput> Attachments,
     DateTimeOffset? ScheduledAt,
-    string? IdempotencyKey);
+    string? IdempotencyKey,
+    // Answering a message already in the mailbox: the provider message id is the
+    // only reply input a client supplies; threading data is resolved server-side.
+    string? ReplyToMessageId = null,
+    string? SubjectOverride = null);
 
 public sealed record TestSendCommand(
     Guid ConnectedEmailAccountId,
@@ -34,7 +38,7 @@ public sealed record SendJobDto(
     Guid Id, string Status, bool IsTest, Guid AccountId, Guid TemplateVersionId,
     string SubjectSnapshot, RecipientCounts RecipientCounts,
     DateTimeOffset? ScheduledAt, DateTimeOffset CreatedAt, DateTimeOffset? CompletedAt,
-    string? FailureCode)
+    string? FailureCode, bool IsReply, string? ReplyToMessageId)
 {
     public static SendJobDto From(EmailSendJob job) => new(
         job.Id,
@@ -47,7 +51,9 @@ public sealed record SendJobDto(
         job.ScheduledAt,
         job.CreatedAt,
         job.CompletedAt,
-        job.FailureCode);
+        job.FailureCode,
+        job.IsReply,
+        job.ReplyToProviderMessageId);
 
     private static RecipientCounts Counts(IReadOnlyCollection<EmailSendRecipient> recipients) => new(
         recipients.Count(r => r.Status == RecipientStatus.Pending),

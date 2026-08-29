@@ -175,8 +175,15 @@ text, non-inline CSS in `<style>` beyond header support, width > 640 px, JS/embe
                     "variableOverrides": { "firstName": "Ada" } } ],
   "variables": { "company": "Acme" },
   "attachments": [ { "assetId": "…", "disposition": "attachment", "filenameOverride": null } ],
-  "scheduledAt": null }
+  "scheduledAt": null,
+  "replyToMessageId": null, "subjectOverride": null }
 ```
+When `replyToMessageId` is set the send answers that inbox message: `recipients` may be
+empty (it defaults to the original sender), the subject becomes `Re: <parent subject>`
+unless `subjectOverride` is given, and the job carries the thread identifiers so the
+message lands in the existing conversation (07-providers.md §5b). The account needs the
+read scope — otherwise 409 `inbox.scope_missing`; an unknown message id is 404.
+
 Validation: account owned + `state=active`; version owned + template not deleted;
 1–50 recipients, RFC-valid, deduped case-insensitively; all required variables resolvable
 per recipient (job values ∪ overrides ∪ defaults) — 422 lists
@@ -189,6 +196,21 @@ createdAt, completedAt, failureCode? }`.
 **POST /sends/test** body: `{ connectedEmailAccountId, templateVersionId, variables,
 attachments? }` — recipient forced to the user's login email (or connected address via
 `toSelf: "login"|"account"`), subject prefixed `[TEST]`.
+
+## 9b. Inbox (read + reply source)
+
+| Method & route | Success | Notes |
+|---|---|---|
+| `GET /inbox?accountId=&pageToken=&search=&pageSize=` | 200 `{ items[], nextPageToken }` | live provider read; `pageSize` ≤ 50 |
+| `GET /inbox/{messageId}?accountId=` | 200 `InboxMessageDetail` | body sanitized server-side; audited as `inbox.message_read` |
+
+`InboxMessageDetail = { id, threadId, fromEmail, fromName, to[], subject, receivedAt,
+html, text, replySubject }`. Nothing is persisted — the mailbox is the source of truth.
+
+Errors: 404 when the account isn't the caller's or the message is gone; 409
+`inbox.scope_missing` when read consent was never granted (reconnect prompt);
+409 `inbox.account_needs_reconnect` when the grant died; 502 `provider.unavailable`
+on an upstream outage.
 
 ## 10. Contacts & groups
 

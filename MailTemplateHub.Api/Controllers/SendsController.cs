@@ -13,10 +13,14 @@ public sealed class SendsController : ControllerBase
     public sealed record CreateSendRequest(
         Guid ConnectedEmailAccountId,
         Guid TemplateVersionId,
-        IReadOnlyList<RecipientInput> Recipients,
+        IReadOnlyList<RecipientInput>? Recipients,
         IReadOnlyDictionary<string, string?>? Variables,
         IReadOnlyList<SendAttachmentInput>? Attachments,
-        DateTimeOffset? ScheduledAt);
+        DateTimeOffset? ScheduledAt,
+        // Set to answer a message in the sending account's mailbox; recipients
+        // then default to the original sender and the send joins that thread.
+        string? ReplyToMessageId,
+        string? SubjectOverride);
 
     public sealed record TestSendRequest(
         Guid ConnectedEmailAccountId,
@@ -34,11 +38,13 @@ public sealed class SendsController : ControllerBase
         CreateSendRequest request, [FromServices] CreateSendJobHandler handler, CancellationToken ct)
     {
         var command = new CreateSendCommand(
-            request.ConnectedEmailAccountId, request.TemplateVersionId, request.Recipients,
+            request.ConnectedEmailAccountId, request.TemplateVersionId, request.Recipients ?? [],
             request.Variables ?? new Dictionary<string, string?>(),
             request.Attachments ?? [],
             request.ScheduledAt,
-            Request.Headers.TryGetValue("Idempotency-Key", out var key) ? key.ToString() : null);
+            Request.Headers.TryGetValue("Idempotency-Key", out var key) ? key.ToString() : null,
+            request.ReplyToMessageId,
+            request.SubjectOverride);
         return Accepted(await handler.HandleAsync(command, ct));
     }
 

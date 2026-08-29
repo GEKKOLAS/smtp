@@ -87,6 +87,11 @@ export function AccountCard({ account }: { account: Account }) {
             )}
           </div>
           <p className="truncate text-sm text-muted-foreground">{account.emailAddress}</p>
+          {account.state === "active" && !account.canReadInbox && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sending only — reconnect to also read this inbox and reply with templates.
+            </p>
+          )}
           {account.state === "needs_reconnect" && account.stateReason && (
             <p className="mt-1 text-xs text-destructive">
               {stateReasonCopy[account.stateReason] ?? "This account needs to be reconnected."}

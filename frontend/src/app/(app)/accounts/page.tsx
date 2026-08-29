@@ -49,7 +49,7 @@ function AccountsInner() {
       <PageHeader
         icon={Plug}
         title="Connected accounts"
-        description="Link Gmail or Outlook to send from your own address. We request send-only access and never see your password."
+        description="Link Gmail or Outlook to send from your own address, and optionally read your inbox to reply with templates. We never see your password."
       />
 
       <ConnectButtons />

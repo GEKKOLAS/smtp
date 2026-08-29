@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Application.Abstractions.Email;
 using MailTemplateHub.Application.Abstractions.Jobs;
 using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Common;
+using MailTemplateHub.Application.Features.Inbox;
 using MailTemplateHub.Application.Features.Templates;
 using MailTemplateHub.Domain.Audit;
 using MailTemplateHub.Domain.Entities;
@@ -24,6 +26,7 @@ public sealed partial class CreateSendJobHandler(
     ITemplateRenderer renderer,
     IBackgroundJobScheduler jobs,
     IAuditWriter audit,
+    InboxHandler inbox,
     IOptions<SendLimitsOptions> limitsOptions,
     IClock clock)
 {
@@ -41,7 +44,6 @@ public sealed partial class CreateSendJobHandler(
             if (existing is not null) return SendJobDto.From(existing);
         }
 
-        ValidateRecipients(command.Recipients, limits);
         ValidateSchedule(command.ScheduledAt, limits);
 
         var account = await db.ConnectedEmailAccounts
@@ -52,6 +54,16 @@ public sealed partial class CreateSendJobHandler(
             throw new ConflictException("send.account_needs_reconnect", "This account needs to be reconnected.");
         }
 
+        // A reply answers a message in this account's mailbox. Reading it here
+        // (rather than trusting the client) is what makes the thread headers
+        // trustworthy, and it lets the recipient default to the original sender.
+        var replyTo = command.ReplyToMessageId is { Length: > 0 } replyId
+            ? await inbox.LoadMessageAsync(account.Id, replyId, ct)
+            : null;
+
+        var recipients = ResolveRecipients(command.Recipients, replyTo);
+        ValidateRecipients(recipients, limits);
+
         var version = await db.EmailTemplateVersions
             .Include(v => v.TemplateAssets).ThenInclude(ta => ta.Asset)
             .Include(v => v.Template!)
@@ -59,12 +71,12 @@ public sealed partial class CreateSendJobHandler(
             ?? throw new NotFoundException();
 
         var content = TemplateContentMapping.ToRenderContent(version);
-        ValidateVariablesPerRecipient(content.Variables, command.Variables, command.Recipients);
+        ValidateVariablesPerRecipient(content.Variables, command.Variables, recipients);
 
         var attachments = await BuildAttachmentsAsync(command.Attachments, ct);
         await EnsureWithinBudgetAsync(content, command.Variables, version, attachments, limits, ct);
 
-        var subjectSnapshot = RenderSubject(content, command.Variables);
+        var subjectSnapshot = ResolveSubject(command, content, replyTo);
         var now = clock.UtcNow;
         var scheduled = command.ScheduledAt is not null;
 
@@ -79,18 +91,57 @@ public sealed partial class CreateSendJobHandler(
             ScheduledAt = command.ScheduledAt,
             QueuedAt = scheduled ? null : now,
             IdempotencyKey = command.IdempotencyKey,
-            Recipients = BuildRecipients(command.Recipients, now),
+            Recipients = BuildRecipients(recipients, now),
             Attachments = attachments,
+            ReplyToProviderMessageId = replyTo?.Id,
+            ReplyToThreadId = replyTo?.ThreadId,
+            ReplyToInternetMessageId = replyTo?.InternetMessageId,
+            ReplyToReferences = BuildReferences(replyTo),
         };
         db.EmailSendJobs.Add(job);
 
         audit.Add(scheduled ? AuditActions.SendScheduled : AuditActions.SendCreated,
             currentUser.UserId, "email_send_job", job.Id,
-            new { recipients = job.Recipients.Count, scheduled });
+            new { recipients = job.Recipients.Count, scheduled, isReply = replyTo is not null });
         await db.SaveChangesAsync(ct);
 
         if (!scheduled) jobs.EnqueueSend(job.Id);
         return SendJobDto.From(job);
+    }
+
+    /// <summary>A reply with no explicit recipients goes back to whoever wrote.</summary>
+    private static IReadOnlyList<RecipientInput> ResolveRecipients(
+        IReadOnlyList<RecipientInput> requested, InboxMessageDetail? replyTo)
+    {
+        if (requested.Count > 0 || replyTo is null) return requested;
+        if (string.IsNullOrWhiteSpace(replyTo.FromEmail))
+        {
+            throw new ValidationFailure("recipients", "The message being replied to has no sender address.");
+        }
+        return [new RecipientInput(replyTo.FromEmail, replyTo.FromName, null, null)];
+    }
+
+    private string ResolveSubject(
+        CreateSendCommand command, Abstractions.Rendering.TemplateContent content, InboxMessageDetail? replyTo)
+    {
+        if (command.SubjectOverride is { Length: > 0 } given) return given;
+        // A reply keeps the thread's subject; the template's own subject would
+        // read as a new conversation in every mail client.
+        return replyTo is not null
+            ? InboxHandler.ReplySubject(replyTo.Subject)
+            : RenderSubject(content, command.Variables);
+    }
+
+    /// <summary>
+    /// RFC 5322 References for the reply: the parent's own chain plus its
+    /// Message-ID, which is how clients place the message inside the thread.
+    /// </summary>
+    private static string? BuildReferences(InboxMessageDetail? replyTo)
+    {
+        if (replyTo?.InternetMessageId is not { Length: > 0 } messageId) return null;
+        return string.IsNullOrWhiteSpace(replyTo.References)
+            ? messageId
+            : $"{replyTo.References.Trim()} {messageId}";
     }
 
     private void ValidateRecipients(IReadOnlyList<RecipientInput> recipients, SendLimitsOptions limits)

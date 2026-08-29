@@ -28,9 +28,13 @@ internal sealed class GmailEmailProviderClient(
         using var built = messageBuilder.Build(email);
         var raw = Base64Url(await ReadAllAsync(built.Rfc822Stream, ct));
 
+        // Gmail files a reply into the existing conversation only when threadId
+        // rides along with the raw MIME; the headers alone are not enough.
         using var request = new HttpRequestMessage(HttpMethod.Post, _sendUrl)
         {
-            Content = JsonContent.Create(new { raw }),
+            Content = email.ProviderThreadId is { Length: > 0 } threadId
+                ? JsonContent.Create(new { raw, threadId })
+                : JsonContent.Create(new { raw }),
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.AccessToken);
 

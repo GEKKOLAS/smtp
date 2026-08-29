@@ -14,6 +14,11 @@ public sealed class EmailSendJobConfiguration : IEntityTypeConfiguration<EmailSe
         builder.Property(j => j.VariableValues).HasColumnType("jsonb").IsRequired();
         builder.Property(j => j.FailureCode).HasMaxLength(50);
         builder.Property(j => j.IdempotencyKey).HasMaxLength(200);
+        builder.Property(j => j.ReplyToProviderMessageId).HasMaxLength(500);
+        builder.Property(j => j.ReplyToThreadId).HasMaxLength(500);
+        builder.Property(j => j.ReplyToInternetMessageId).HasMaxLength(1000);
+        // A long thread's References chain has no useful upper bound; keep it text.
+        builder.Property(j => j.ReplyToReferences);
 
         builder.HasIndex(j => new { j.UserId, j.Status, j.CreatedAt });
         builder.HasIndex(j => j.ScheduledAt)

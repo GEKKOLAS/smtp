@@ -30,6 +30,8 @@ public static class AuditActions
     public const string TemplateDeleted = "template.deleted";
     public const string TemplateRestored = "template.restored";
 
+    public const string InboxMessageRead = "inbox.message_read";
+
     public const string SendCreated = "send.created";
     public const string SendScheduled = "send.scheduled";
     public const string SendCancelled = "send.cancelled";

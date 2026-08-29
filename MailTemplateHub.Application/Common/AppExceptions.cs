@@ -15,3 +15,7 @@ public sealed class UnauthorizedAppException(string code, string message)
 
 public class ConflictException(string code, string message)
     : AppException(code, message);
+
+/// <summary>An upstream provider call failed for a reason the user cannot fix — surfaced as 502.</summary>
+public sealed class ProviderUnavailableException(string message = "The email provider is unavailable.")
+    : AppException("provider.unavailable", message);

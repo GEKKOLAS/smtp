@@ -35,6 +35,17 @@ public sealed class EmailSendJob : IHasTimestamps
     public long? TotalSizeBytes { get; set; }
     public string? IdempotencyKey { get; init; }
 
+    // Reply context, resolved from the provider at queue time so the background
+    // send can thread the message without re-reading the mailbox (spec 07 §3).
+    // The provider ids identify the message being answered; the RFC 5322 ids
+    // drive the In-Reply-To/References headers that every mail client threads on.
+    public string? ReplyToProviderMessageId { get; init; }
+    public string? ReplyToThreadId { get; init; }
+    public string? ReplyToInternetMessageId { get; init; }
+    public string? ReplyToReferences { get; init; }
+
+    public bool IsReply => ReplyToProviderMessageId is not null;
+
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

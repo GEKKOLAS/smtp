@@ -22,8 +22,12 @@ The build follows [docs/spec/12-implementation-plan.md](docs/spec/12-implementat
 
 ## Features
 
-- **Own-inbox sending** — OAuth-connect Gmail and/or Outlook (send-only scopes; we never see your
-  password) and send through the provider's own API, so mail comes from your real address.
+- **Own-inbox sending** — OAuth-connect Gmail and/or Outlook (we never see your password) and send
+  through the provider's own API, so mail comes from your real address.
+- **Read your inbox and reply with a template** — answer a real conversation instead of starting a
+  new one: the reply keeps the thread's subject, goes back to whoever wrote, and lands in the same
+  conversation in the recipient's client. Inbox read access is a **separate, optional consent** —
+  decline it and everything else keeps working.
 - **Three ways to build a template** — a drag-and-drop visual builder (GrapesJS) on top of MJML,
   raw MJML/HTML source with a live sandboxed preview, or **generate one from a natural-language
   prompt** with Claude, picking a **Standard** (fast) or **Advanced design** (higher-effort,

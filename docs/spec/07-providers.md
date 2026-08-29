@@ -10,10 +10,14 @@ Covers Deliverables G and 14 (MIME & attachments). All code lives in
 | Console | Google Cloud Console → OAuth consent + credentials (Web application) | Entra ID app registration, `AzureADandPersonalMicrosoftAccount` audience |
 | Authority | `https://accounts.google.com/o/oauth2/v2/auth` / token `https://oauth2.googleapis.com/token` | `https://login.microsoftonline.com/common/oauth2/v2.0/{authorize,token}` |
 | Redirect URI | `https://{api-host}/api/v1/oauth/gmail/callback` | `https://{api-host}/api/v1/oauth/outlook/callback` |
-| Scopes | `openid email profile https://www.googleapis.com/auth/gmail.send` | `openid profile email offline_access User.Read Mail.Send` |
+| Scopes | `openid email profile https://www.googleapis.com/auth/gmail.send` + optional `.../gmail.readonly` | `openid profile email offline_access User.Read Mail.Send` + optional `Mail.Read` |
 | Refresh token | Only with `access_type=offline&prompt=consent`; long-lived; revocable; expires if unused ~6 months; **7-day expiry while app is in "Testing"** | Always with `offline_access`; **rotates on every refresh** (must persist the new one); ~90-day inactivity window |
 | Revocation endpoint | `POST https://oauth2.googleapis.com/revoke?token=` | No universal endpoint for a single refresh token — disconnect = delete our tokens (document to user that consent remains in their MS account page) |
-| ⚠️ Provider risk | `gmail.send` is **restricted**: unverified apps capped at 100 test users; production needs OAuth verification (+ possible CASA assessment, weeks of lead time) | Org tenants may require **admin consent** for `Mail.Send`; handle `consent_required`/`AADSTS65001` by showing an "ask your admin" screen |
+| ⚠️ Provider risk | `gmail.send` is **restricted**: unverified apps capped at 100 test users; production needs OAuth verification (+ possible CASA assessment, weeks of lead time). `gmail.readonly` is **also restricted** and widens that same review | Org tenants may require **admin consent** for `Mail.Send`; handle `consent_required`/`AADSTS65001` by showing an "ask your admin" screen. `Mail.Read` is delegated, no extra admin tier |
+
+**Read scope is optional, never required.** `RequiredScopes` stays send-only, so an
+account that declines (or predates) read access connects normally and only loses the
+inbox feature. `AccountDto.CanReadInbox` drives the UI's reconnect prompt.
 
 ## 2. Token refresh (`ITokenRefreshService`)
 
@@ -170,6 +174,34 @@ Rules:
     no auto-mutation of the user's message.
   - CID rejected / malformed content → error surfaces as failed recipient; user can switch
     images to hosted and retry (one-click "convert inline images to hosted" on retry dialog — post-MVP).
+
+## 5b. Reading the inbox & replying in-thread (`IInboxProviderClient`)
+
+A template can answer a real conversation instead of starting a new one. Reads go
+straight to the provider on every call — no message is ever stored.
+
+| | Gmail (`GmailInboxClient`) | Outlook (`OutlookInboxClient`) |
+|---|---|---|
+| List | `users.messages.list?labelIds=INBOX` returns ids only → one `format=metadata` get per id (bounded concurrency) | `/me/mailFolders/inbox/messages?$select=…` returns full rows in one call |
+| Paging | `nextPageToken` | the whole `@odata.nextLink` URL is the page token |
+| Search | `q=` | `$search="…"` (mutually exclusive with `$orderby`) |
+| Body | `format=full`, depth-first walk of `payload.parts` for `text/html` / `text/plain`, base64url-decoded | `body.content` + `body.contentType` |
+| Thread ids | `threadId`, `Message-ID` / `References` headers | `conversationId`, `internetMessageId`, `internetMessageHeaders` |
+
+**Threading a reply.** `POST /sends` takes only `replyToMessageId`; the server re-reads
+that message so a client can never inject `In-Reply-To`/`References` values. What it
+resolves is frozen onto the job (`reply_to_*` columns) so the background send needs no
+second mailbox read:
+
+- `In-Reply-To` = parent's `Message-ID`; `References` = parent's chain + its `Message-ID`.
+  Both providers thread on these.
+- Gmail additionally needs `threadId` in the send payload — headers alone are not enough,
+  which is why `OutgoingEmail.ProviderThreadId` exists.
+- Recipients default to the parent's sender; the subject becomes `Re: <parent subject>`
+  (not the template's own subject) unless overridden.
+
+Sender-controlled HTML is sanitized server-side and framed in a fully locked
+(`sandbox=""`) iframe in the reader.
 
 ## 6. Account lifecycle & connection test
 

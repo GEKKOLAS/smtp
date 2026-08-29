@@ -498,6 +498,25 @@ namespace MailTemplateHub.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("rendered_snapshot_key");
 
+                    b.Property<string>("ReplyToInternetMessageId")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("reply_to_internet_message_id");
+
+                    b.Property<string>("ReplyToProviderMessageId")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reply_to_provider_message_id");
+
+                    b.Property<string>("ReplyToReferences")
+                        .HasColumnType("text")
+                        .HasColumnName("reply_to_references");
+
+                    b.Property<string>("ReplyToThreadId")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reply_to_thread_id");
+
                     b.Property<DateTimeOffset?>("ScheduledAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at");

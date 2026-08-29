@@ -16,4 +16,7 @@ public sealed record OutgoingEmail(
     string TextBody,
     IReadOnlyList<CidAttachment> InlineAssets,
     IReadOnlyList<FileAttachment> Attachments,
-    IReadOnlyDictionary<string, string> Headers);
+    IReadOnlyDictionary<string, string> Headers,
+    // Provider-side conversation to append to. Gmail needs it in the send
+    // payload; Outlook threads purely on the In-Reply-To/References headers.
+    string? ProviderThreadId = null);

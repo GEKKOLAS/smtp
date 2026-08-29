@@ -5,6 +5,7 @@ using MailTemplateHub.Application.Features.ApiKeys;
 using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Application.Features.Audit;
 using MailTemplateHub.Application.Features.Auth;
+using MailTemplateHub.Application.Features.Inbox;
 using MailTemplateHub.Application.Features.Me;
 using MailTemplateHub.Application.Features.Rendering;
 using MailTemplateHub.Application.Features.Sends;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<TemplatesHandler>();
         services.AddScoped<TemplateVersionsHandler>();
         services.AddScoped<RenderHandler>();
+        services.AddScoped<InboxHandler>();
         services.AddScoped<CreateSendJobHandler>();
         services.AddScoped<TestSendHandler>();
         services.AddScoped<SendJobsHandler>();

@@ -17,10 +17,14 @@ export interface RecipientInput {
 export interface CreateSendInput {
   connectedEmailAccountId: string;
   templateVersionId: string;
-  recipients: RecipientInput[];
+  /** Omit when replying: the backend answers the original sender. */
+  recipients?: RecipientInput[];
   variables?: Record<string, string | null>;
   attachments?: { assetId: string; disposition: string; filenameOverride?: string | null }[];
   scheduledAt?: string | null;
+  /** Provider message id to answer; puts the send in that conversation. */
+  replyToMessageId?: string | null;
+  subjectOverride?: string | null;
 }
 
 export function createSend(input: CreateSendInput): Promise<SendJob> {

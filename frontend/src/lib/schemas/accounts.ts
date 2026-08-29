@@ -17,6 +17,7 @@ export const accountSchema = z.object({
   grantedScopes: z.array(z.string()),
   connectedAt: z.string(),
   lastUsedAt: z.string().nullable(),
+  canReadInbox: z.boolean(),
 });
 export type Account = z.infer<typeof accountSchema>;
 

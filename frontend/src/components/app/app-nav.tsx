@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   Image as ImageIcon,
+  Inbox,
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
@@ -27,6 +28,7 @@ export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/accounts", label: "Accounts", icon: Plug },
   { href: "/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/assets", label: "Assets", icon: ImageIcon },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/compose", label: "Compose", icon: PenSquare },
   { href: "/sends", label: "History", icon: History },
   { href: "/audit", label: "Activity", icon: Activity },

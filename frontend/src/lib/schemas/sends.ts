@@ -25,6 +25,8 @@ export const sendJobSchema = z.object({
   createdAt: z.string(),
   completedAt: z.string().nullable(),
   failureCode: z.string().nullable(),
+  isReply: z.boolean(),
+  replyToMessageId: z.string().nullable(),
 });
 export type SendJob = z.infer<typeof sendJobSchema>;
 
