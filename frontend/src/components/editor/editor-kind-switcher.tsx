@@ -17,22 +17,32 @@ export function EditorKindSwitcher({
   isHtml,
   onConvert,
   converting,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   isHtml: boolean;
   onConvert: () => void;
   converting: boolean;
+  /** Pass with onOpenChange to open it from elsewhere (e.g. a menu); no trigger button is rendered then. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : innerOpen;
+  const setOpen = (next: boolean) => (controlled ? onOpenChange?.(next) : setInnerOpen(next));
   const targetLabel = isHtml ? "MJML" : "HTML";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Repeat className="size-4" />
-          Switch to {targetLabel}
-        </Button>
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <Repeat className="size-4" />
+            Switch to {targetLabel}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Switch to {targetLabel}?</DialogTitle>

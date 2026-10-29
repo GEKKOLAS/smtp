@@ -2,6 +2,7 @@
 
 import { previewTemplate, saveVersion } from "@/lib/api/templates";
 import { ApiError } from "@/lib/api/client";
+import { useSession } from "@/lib/hooks/use-session";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { EditorKind, Template, TemplateContentInput, TemplateVariable } from "@/lib/schemas/templates";
 import { applyPlaceholder, type PlaceholderRole } from "@/lib/mjml-placeholders";
@@ -13,14 +14,31 @@ import { PreviewPane } from "@/components/editor/preview-pane";
 import { TestSendDialog } from "@/components/editor/test-send-dialog";
 import { VariablePanel, detectVariables } from "@/components/editor/variable-panel";
 import { VersionHistorySheet } from "@/components/editor/version-history-sheet";
+import { LogoMark } from "@/components/app/logo-mark";
+import { InboxPreviewBar } from "@/components/editor/inbox-preview-bar";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Send } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  Download,
+  FlaskConical,
+  History,
+  MoreHorizontal,
+  Repeat,
+  Send,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const GrapesEditor = dynamic(
@@ -44,6 +62,10 @@ export function TemplateEditor({ template }: { template: Template }) {
   const [tab, setTab] = useState<"visual" | "mjml" | "preview">(showVisual ? "visual" : "mjml");
   const [grapesKey, setGrapesKey] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [kindOpen, setKindOpen] = useState(false);
+  const { data: user } = useSession();
 
   const detected = useMemo(() => detectVariables(subject, preheader, source), [subject, preheader, source]);
 
@@ -148,29 +170,98 @@ export function TemplateEditor({ template }: { template: Template }) {
     markDirty();
   };
 
+  // ⌘S / Ctrl+S saves a new version, like any desktop editor.
+  const saveRef = useRef(() => {});
+  useEffect(() => {
+    saveRef.current = () => {
+      if (dirty && !save.isPending) save.mutate();
+    };
+  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+  const sourceLabel = editorKind === "html" ? "HTML" : "MJML";
+  const composeHref = `/compose?templateId=${template.id}`;
+
   return (
-    <div className="flex h-[calc(100vh-7.5rem)] flex-col overflow-hidden rounded-2xl ring-1 ring-border/70">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 bg-muted/30 px-4 py-3 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/templates">← Templates</Link>
+    <div className="flex h-dvh min-h-0 flex-col">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b-2 bg-card px-3 dark:border-b">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <Button asChild variant="ghost" size="icon" aria-label="Back to templates">
+            <Link href="/templates">
+              <ArrowLeft />
+            </Link>
           </Button>
-          <div>
-            <p className="font-medium">{template.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {dirty ? "Unsaved changes" : `Saved · v${version?.versionNumber}`}
+          <LogoMark withWordmark={false} className="hidden sm:flex" />
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 truncate text-sm font-bold dark:font-semibold">
+              <span className="truncate">{template.name}</span>
+              <span className="shrink-0 rounded-md bg-muted px-1.5 py-px font-mono text-[10px] font-bold text-muted-foreground">
+                {sourceLabel}
+              </span>
+            </p>
+            <p className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground" aria-live="polite">
+              <span
+                aria-hidden
+                className={`size-1.5 rounded-full ${dirty || save.isPending ? "bg-[#ff7a45]" : "bg-[#22c55e]"}`}
+              />
+              {save.isPending
+                ? "Saving…"
+                : dirty
+                  ? "Unsaved changes"
+                  : version
+                    ? `v${version.versionNumber} · saved`
+                    : "Not saved yet"}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => exportHtml.mutate()} disabled={exportHtml.isPending}>
-            Export HTML
-          </Button>
-          <EditorKindSwitcher
-            isHtml={editorKind === "html"}
-            converting={convert.isPending}
-            onConvert={() => convert.mutate()}
-          />
+
+        <Tabs
+          value={tab}
+          onValueChange={(value) => {
+            if (value === "visual" && tab === "mjml") setGrapesKey((k) => k + 1);
+            setTab(value as typeof tab);
+          }}
+        >
+          <TabsList aria-label="Editor mode">
+            {showVisual && <TabsTrigger value="visual">Visual</TabsTrigger>}
+            <TabsTrigger value="mjml">{sourceLabel}</TabsTrigger>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="flex flex-1 items-center justify-end gap-2">
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="More actions">
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onSelect={() => exportHtml.mutate()} disabled={exportHtml.isPending}>
+                <Download />
+                Export HTML
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setKindOpen(true)} disabled={convert.isPending}>
+                <Repeat />
+                Switch to {editorKind === "html" ? "MJML" : "HTML"}…
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setHistoryOpen(true)}>
+                <History />
+                Version history
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <AiEditDialog
             currentSource={source}
             isHtml={editorKind === "html"}
@@ -192,74 +283,80 @@ export function TemplateEditor({ template }: { template: Template }) {
               toast.success("AI edit applied — review and save when ready.");
             }}
           />
-          <TestSendDialog versionId={version?.id} disabled={dirty} />
-          <VersionHistorySheet
-            templateId={template.id}
-            onRestored={() => queryClient.invalidateQueries({ queryKey: queryKeys.template(template.id) })}
-          />
-          {/* Send to real recipients: hands off to the full Compose flow (account
-              picker, recipients, per-send variables, scheduling) with this
-              template preselected. Sends the saved version — save first to include
-              in-progress edits. Always enabled so the path is never hidden (the
-              visual editor marks the template dirty on load, which must not gate it). */}
-          <Button asChild variant="gradient" size="sm">
-            <Link href={`/compose?templateId=${template.id}`}>
-              <Send className="size-4" />
-              Send
-            </Link>
-          </Button>
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !dirty}>
+          {/* Send hands off to the full Compose flow with this template preselected; it sends the
+              saved version. Kept enabled even when dirty: the visual editor marks the template
+              dirty on load, which must not hide the path. The test send needs a saved version. */}
+          <div className="flex">
+            <Button asChild variant="outline" className="rounded-r-none">
+              <Link href={composeHref}>
+                <Send />
+                Send
+              </Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="-ml-0.5 rounded-l-none" aria-label="Send options">
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <DropdownMenuItem onSelect={() => setTestOpen(true)} disabled={dirty || !version}>
+                  <FlaskConical />
+                  {dirty ? "Send a test (save first)" : "Send a test to yourself"}
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={composeHref}>
+                    <Send />
+                    Send to recipients…
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <Button variant="gradient" onClick={() => save.mutate()} disabled={save.isPending || !dirty}>
             {save.isPending ? "Saving…" : "Save version"}
+            <kbd className="hidden rounded border border-current/30 px-1 font-mono text-[10px] opacity-70 lg:inline">
+              {isMac ? "⌘S" : "Ctrl S"}
+            </kbd>
           </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-3 border-b border-border/70 bg-card/40 px-4 py-3 backdrop-blur-xl sm:grid-cols-2">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Subject</label>
-          <Input value={subject} onChange={(e) => { setSubject(e.target.value); markDirty(); }} />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Preheader</label>
-          <Input value={preheader} onChange={(e) => { setPreheader(e.target.value); markDirty(); }} />
-        </div>
-      </div>
+      <InboxPreviewBar
+        senderName={user?.displayName ?? "You"}
+        subject={subject}
+        preheader={preheader}
+        onSubjectChange={(value) => {
+          setSubject(value);
+          markDirty();
+        }}
+        onPreheaderChange={(value) => {
+          setPreheader(value);
+          markDirty();
+        }}
+      />
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <Tabs
-            value={tab}
-            onValueChange={(value) => {
-              if (value === "visual" && tab === "mjml") setGrapesKey((k) => k + 1);
-              setTab(value as typeof tab);
-            }}
-          >
-            <TabsList className="m-2">
-              {showVisual && <TabsTrigger value="visual">Visual</TabsTrigger>}
-              <TabsTrigger value="mjml">{editorKind === "html" ? "HTML" : "MJML"}</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="min-h-0 flex-1">
-            {tab === "visual" && showVisual && (
-              <GrapesEditor
-                key={grapesKey}
-                initialMjml={source}
-                onChange={(mjml) => { setSource(mjml); markDirty(); }}
-              />
-            )}
-            {tab === "mjml" && (
-              <MjmlSourceEditor value={source} onChange={(v) => { setSource(v); markDirty(); }} />
-            )}
-            {tab === "preview" && (
-              <PreviewPane preview={preview.data} isLoading={preview.isFetching} error={previewError} />
-            )}
-          </div>
+          {tab === "visual" && showVisual && (
+            <GrapesEditor
+              key={grapesKey}
+              initialMjml={source}
+              onChange={(mjml) => { setSource(mjml); markDirty(); }}
+            />
+          )}
+          {tab === "mjml" && (
+            <MjmlSourceEditor value={source} onChange={(v) => { setSource(v); markDirty(); }} />
+          )}
+          {tab === "preview" && (
+            <PreviewPane preview={preview.data} isLoading={preview.isFetching} error={previewError} />
+          )}
         </div>
 
-        <aside className="w-72 shrink-0 overflow-auto border-l border-border/70 bg-card/40 backdrop-blur-xl">
-          <p className="border-b border-border/70 px-3 py-2 text-sm font-medium">Variables</p>
+        <aside className="w-80 shrink-0 overflow-auto border-l-2 bg-card dark:border-l">
+          <p className="border-b-2 px-3 py-2.5 font-mono text-[11px] font-bold tracking-[0.06em] text-muted-foreground uppercase dark:border-b dark:font-sans dark:font-medium">
+            Variables
+          </p>
           <VariablePanel
             detected={detected}
             variables={variables}
@@ -267,12 +364,29 @@ export function TemplateEditor({ template }: { template: Template }) {
           />
           {showVisual && (
             <>
-              <p className="border-y border-border/70 px-3 py-2 text-sm font-medium">Images</p>
+              <p className="border-y-2 px-3 py-2.5 font-mono text-[11px] font-bold tracking-[0.06em] text-muted-foreground uppercase dark:border-y dark:font-sans dark:font-medium">
+                Images
+              </p>
               <ImagePlaceholdersPanel currentMjml={source} onChange={applyImagePlaceholder} />
             </>
           )}
         </aside>
       </div>
+
+      <EditorKindSwitcher
+        isHtml={editorKind === "html"}
+        converting={convert.isPending}
+        onConvert={() => convert.mutate()}
+        open={kindOpen}
+        onOpenChange={setKindOpen}
+      />
+      <TestSendDialog versionId={version?.id} open={testOpen} onOpenChange={setTestOpen} />
+      <VersionHistorySheet
+        templateId={template.id}
+        onRestored={() => queryClient.invalidateQueries({ queryKey: queryKeys.template(template.id) })}
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+      />
     </div>
   );
 }

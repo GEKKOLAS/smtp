@@ -26,11 +26,19 @@ import { toast } from "sonner";
 export function TestSendDialog({
   versionId,
   disabled,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   versionId: string | undefined;
   disabled?: boolean;
+  /** Pass with onOpenChange to open it from elsewhere (e.g. a menu); no trigger button is rendered then. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : innerOpen;
+  const setOpen = (next: boolean) => (controlled ? onOpenChange?.(next) : setInnerOpen(next));
   const [accountId, setAccountId] = useState("");
   const accounts = useQuery({ queryKey: queryKeys.accounts, queryFn: listAccounts, enabled: open });
   const active = accounts.data?.filter((a) => a.state === "active") ?? [];
@@ -49,9 +57,11 @@ export function TestSendDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled}>Test send</Button>
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" disabled={disabled}>Test send</Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Send a test</DialogTitle>

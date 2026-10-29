@@ -19,12 +19,20 @@ import { toast } from "sonner";
 export function VersionHistorySheet({
   templateId,
   onRestored,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   templateId: string;
   onRestored: () => void;
+  /** Pass with onOpenChange to open it from elsewhere (e.g. a menu); no trigger button is rendered then. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const controlled = controlledOpen !== undefined;
+  const open = controlled ? controlledOpen : innerOpen;
+  const setOpen = (next: boolean) => (controlled ? onOpenChange?.(next) : setInnerOpen(next));
 
   const { data } = useQuery({
     queryKey: queryKeys.templateVersions(templateId),
@@ -46,9 +54,11 @@ export function VersionHistorySheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="outline" size="sm">History</Button>
-      </SheetTrigger>
+      {!controlled && (
+        <SheetTrigger asChild>
+          <Button variant="outline" size="sm">History</Button>
+        </SheetTrigger>
+      )}
       <SheetContent className="sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Version history</SheetTitle>

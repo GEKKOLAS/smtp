@@ -43,6 +43,17 @@ export function GrapesEditor({ initialMjml, onChange }: GrapesEditorProps) {
         // with hard-coded colors (.gjs-one-bg etc.) that overrides our
         // token-driven theme in grapes-editor-theme.css.
         pluginsOpts: { [mjmlPlugin as unknown as string]: { useCustomTheme: false } },
+        // Emails are ~600px wide: frame the desktop view instead of stretching it edge to edge,
+        // so it sits on the dotted work surface like the Preview tab. widthMedia stays empty so
+        // desktop edits don't land inside a max-width media query. Names match the commands
+        // grapesjs-mjml registers (set-device-desktop / -tablet / -mobile).
+        deviceManager: {
+          devices: [
+            { id: "desktop", name: "Desktop", width: "640px", widthMedia: "" },
+            { id: "tablet", name: "Tablet", width: "770px", widthMedia: "992px" },
+            { id: "mobilePortrait", name: "Mobile portrait", width: "320px", widthMedia: "480px" },
+          ],
+        },
         assetManager: {
           uploadFile: async (event: DragEvent | Event) => {
             const input = (event as DragEvent).dataTransfer ?? (event.target as HTMLInputElement);

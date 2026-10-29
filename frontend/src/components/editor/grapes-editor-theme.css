@@ -72,11 +72,15 @@
 
 /* ---------- Canvas: floating page on a work surface (the Canva look) ---------- */
 
+/* Dotted work surface, matching the Preview tab. */
 .gjs-cv-canvas {
-  background:
-    radial-gradient(ellipse 60% 50% at 20% 0%, color-mix(in oklab, var(--brand) 7%, transparent), transparent),
-    radial-gradient(ellipse 50% 60% at 90% 100%, color-mix(in oklab, var(--brand-2) 6%, transparent), transparent),
-    var(--background);
+  background-color: var(--background);
+  background-image: radial-gradient(color-mix(in oklab, var(--foreground) 16%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.dark .gjs-cv-canvas {
+  background-image: radial-gradient(color-mix(in oklab, var(--foreground) 8%, transparent) 1px, transparent 1px);
 }
 
 .gjs-cv-canvas-bg {
@@ -88,12 +92,19 @@
   box-sizing: border-box;
 }
 
+/* Light ("Mailroom"): ink outline + hard offset shadow. Dark ("Nocturne"): hairline + soft drop. */
 .gjs-frame {
   border-radius: 10px;
   box-shadow:
+    0 0 0 2px var(--foreground),
+    6px 6px 0 0 var(--foreground);
+  background-color: #fff;
+}
+
+.dark .gjs-frame {
+  box-shadow:
     0 0 0 1px var(--border),
     0 12px 40px -12px rgb(0 0 0 / 0.45);
-  background-color: #fff;
 }
 
 /* ---------- Blocks panel ---------- */

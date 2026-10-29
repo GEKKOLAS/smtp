@@ -3,6 +3,7 @@
 import type { TemplateVariable } from "@/lib/schemas/templates";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 
 /**
  * Lists the variables detected in the content and lets the author set the sample
@@ -41,15 +42,16 @@ export function VariablePanel({
         <div key={variable.name} className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label className="font-mono text-xs">{`{{${variable.name}}}`}</Label>
-            <select
+            <NativeSelect
               value={variable.type}
               onChange={(e) => update(variable.name, { type: e.target.value as TemplateVariable["type"] })}
-              className="rounded border bg-background px-1.5 py-0.5 text-xs"
+              aria-label={`Type of ${variable.name}`}
+              className="h-6 w-auto px-1 font-mono text-[11px]"
             >
               <option value="text">text</option>
               <option value="url">url</option>
               <option value="html">html</option>
-            </select>
+            </NativeSelect>
           </div>
           <Input
             value={variable.sample ?? ""}

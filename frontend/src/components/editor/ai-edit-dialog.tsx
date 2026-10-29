@@ -137,7 +137,10 @@ export function AiEditDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          className="border-foreground bg-[#7c5cff] text-white hover:bg-[#7c5cff] dark:border-transparent dark:bg-primary/15 dark:text-primary dark:hover:bg-primary/25"
+        >
           <Wand2 className="size-4" />
           Edit with AI
         </Button>

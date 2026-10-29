@@ -30,6 +30,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Focus mode: the template editor brings its own header and needs every pixel of width,
+  // so it renders without the sidebar and the app topbar.
+  if (/^\/templates\/[^/]+\/edit\/?$/.test(pathname)) {
+    return <div className="flex h-dvh min-h-0 flex-1 flex-col">{children}</div>;
+  }
+
   const activeLabel = NAV_ITEMS.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
   )?.label;
@@ -40,7 +46,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <GradientBackdrop />
       <AppNav user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* h-14 is load-bearing: template-editor.tsx sizes itself as 100vh minus this bar and main's py-8. */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b-2 bg-background/80 px-8 backdrop-blur-xl dark:border-b">
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
             <span className="truncate">{firstName}&apos;s workspace</span>
