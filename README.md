@@ -9,16 +9,22 @@ The build follows [docs/spec/12-implementation-plan.md](docs/spec/12-implementat
 
 ## Screenshots
 
+Two themes, one app: **Mailroom** (light — lilac paper, ink borders, hard offset shadows, Space Grotesk)
+and **Nocturne** (dark — near-black surfaces, hairline borders, a violet accent, Geist). Toggle with the
+sun/moon button; the choice is remembered. Screenshots use demo data.
+
 |                                                                     |                                                                     |
 | :-----------------------------------------------------------------: | :-----------------------------------------------------------------: |
-| ![Sign in](docs/screenshots/login-dark.png)                        | ![Dashboard](docs/screenshots/dashboard-dark.png)                  |
-| Sign in — glass panels over a soft gradient backdrop                | Dashboard — connected accounts, templates and delivery at a glance  |
-| ![AI template generation](docs/screenshots/new-template-dialog-dark.png) | ![Template editor](docs/screenshots/template-editor-source-dark.png) |
-| Generate a template from a prompt, choosing a Standard or Advanced design model | Visual (GrapesJS) / MJML source / live preview, with dark syntax highlighting |
-| ![Image placeholders](docs/screenshots/template-editor-images-panel.png) | ![Resizable preview](docs/screenshots/template-editor-preview-dark.png) |
-| Manual background/header-logo/footer-logo placeholders — no AI required | Live preview with Desktop/Mobile presets, an exact-px input, and a drag handle |
-| ![Templates](docs/screenshots/templates-dark.png)                  | ![Light mode](docs/screenshots/dashboard-light.png)                |
-| Templates list with versioning, duplicate, archive                  | Full light-mode theme, not just an inverted dark mode               |
+| ![Dashboard, light](docs/screenshots/dashboard-light.png)          | ![Dashboard, dark](docs/screenshots/dashboard-dark.png)            |
+| Dashboard — setup progress, 30-day KPIs, send volume, replies waiting | The same dashboard in Nocturne                                     |
+| ![Template editor](docs/screenshots/template-editor-visual-light.png) | ![Template preview](docs/screenshots/template-editor-preview-dark.png) |
+| Full-screen editor: visual builder, inbox-style subject/preheader bar, variables & images rail | Preview on a dotted canvas — Desktop/Mobile, exact width, zoom, and a simulated dark inbox |
+| ![Inbox](docs/screenshots/inbox-light.png)                         | ![Accounts](docs/screenshots/accounts-dark.png)                    |
+| Read your inbox and answer in-thread with a template               | Connected Gmail/Outlook mailboxes, capabilities and reconnect state |
+| ![Templates](docs/screenshots/templates-light.png)                 | ![AI template generation](docs/screenshots/new-template-dialog-dark.png) |
+| Templates with live thumbnails, versioning, duplicate, archive      | Generate a template from a prompt, choosing a Standard or Advanced design model |
+| ![Sign in](docs/screenshots/login-light.png)                       | ![Send history](docs/screenshots/history-dark.png)                 |
+| Sign in                                                             | Every send with per-recipient delivery and status                   |
 
 ## Features
 
@@ -43,8 +49,12 @@ The build follows [docs/spec/12-implementation-plan.md](docs/spec/12-implementat
 - **Convert a template's format** — switch an existing template between MJML (visual builder +
   source view) and raw HTML at any time; MJML compiles down to static HTML, and HTML wraps
   losslessly into MJML (`mj-raw`) to go the other way.
-- **Resizable live preview** — Desktop/Mobile presets, an exact-pixel width field, and a drag handle
-  for anything in between.
+- **Focused editor** — the template editor takes the full screen with its own header: one primary
+  **Save version** (⌘S / Ctrl+S), a Send menu (test to yourself or send to recipients), and the rest
+  tucked under "⋯". Subject and preheader are edited in an inbox-style row that shows how they'll
+  read in a recipient's list, with a length hint.
+- **Live preview on a work canvas** — Desktop/Mobile presets, an exact-pixel width field, a drag
+  handle, zoom, and a simulated dark-mode inbox to sanity-check how clients recolor the email.
 - **Asset library** — presigned direct-to-storage uploads (MinIO/S3) with image/GIF/document
   support, dedupe, and per-user quota.
 - **Scheduled & tracked sending** — queue, schedule, or test-send to yourself; per-recipient
@@ -53,7 +63,8 @@ The build follows [docs/spec/12-implementation-plan.md](docs/spec/12-implementat
 - **Automation-friendly** — a scoped API-key auth scheme for scripting sends (see
   [docs/integrations/n8n-whatsapp.md](docs/integrations/n8n-whatsapp.md) for the n8n/WhatsApp
   approve-and-send workflow).
-- **Light & dark mode**, both fully themed (not an inverted palette bolt-on).
+- **Two designed themes** — Mailroom (light) and Nocturne (dark), each with its own type, borders and
+  shadows rather than an inverted palette.
 
 ## Stack
 
