@@ -46,27 +46,27 @@ export default function SendDetailPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <Link href="/sends" className="text-sm text-muted-foreground hover:underline">← Send history</Link>
-      </div>
+      <Link href="/sends" className="inline-block text-sm font-semibold text-link hover:underline">
+        ← Send history
+      </Link>
 
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="truncate text-xl font-semibold tracking-tight">
-            {job.isTest && <span className="mr-1 text-sm text-muted-foreground">[TEST]</span>}
+          <p className="mb-1.5 font-mono text-xs font-bold tracking-[0.04em] uppercase dark:font-medium dark:text-muted-foreground">
+            {[
+              job.isTest && "Test send",
+              job.isReply && "Reply",
+              job.scheduledAt ? `Scheduled for ${formatDate(job.scheduledAt)}` : `Created ${formatDate(job.createdAt)}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <h1 className="font-heading text-3xl leading-tight font-bold tracking-[-0.03em] dark:text-2xl dark:font-semibold dark:tracking-tight">
             {job.subjectSnapshot}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {job.scheduledAt ? `Scheduled for ${formatDate(job.scheduledAt)}` : `Created ${formatDate(job.createdAt)}`}
-          </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {job.isReply && (
-            <Badge variant="secondary" className="gap-1">
-              <CornerUpLeft className="size-3" />
-              Reply
-            </Badge>
-          )}
+          {job.isReply && <CornerUpLeft className="size-4 text-muted-foreground" aria-hidden />}
           <SendStatusBadge status={job.status} />
           {canCancel && (
             <Button variant="outline" size="sm" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
@@ -81,20 +81,20 @@ export default function SendDetailPage() {
         </div>
       </header>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Recipients</CardTitle></CardHeader>
+      <Card className="gap-0 pb-0">
+        <CardHeader className="pb-3"><CardTitle className="text-base">Recipients · {recipients.length}</CardTitle></CardHeader>
         <CardContent className="p-0">
-          <ul className="divide-y">
+          <ul className="divide-y-2 border-t-2 dark:divide-y dark:border-t dark:divide-border/60">
             {recipients.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-4 px-6 py-3">
+              <li key={r.id} className="flex items-center justify-between gap-4 px-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{r.email}</p>
                   {r.failureMessage && <p className="text-xs text-destructive">{r.failureMessage}</p>}
                   {r.providerMessageId && (
-                    <p className="truncate text-xs text-muted-foreground">id: {r.providerMessageId}</p>
+                    <p className="truncate font-mono text-[11px] text-muted-foreground">id: {r.providerMessageId}</p>
                   )}
                 </div>
-                <Badge variant={r.status === "sent" ? "default" : r.status === "failed" ? "destructive" : "secondary"}>
+                <Badge variant={r.status === "sent" ? "success" : r.status === "failed" ? "destructive" : "secondary"}>
                   {r.status}
                 </Badge>
               </li>
@@ -107,7 +107,7 @@ export default function SendDetailPage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Provider events</CardTitle></CardHeader>
           <CardContent>
-            <ul className="space-y-1 text-xs text-muted-foreground">
+            <ul className="space-y-1 font-mono text-xs text-muted-foreground">
               {events.map((e, i) => (
                 <li key={i}>
                   {formatDate(e.createdAt)} · {e.eventType}

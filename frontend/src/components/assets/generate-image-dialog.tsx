@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { type ReactNode, useState } from "react";
@@ -108,13 +109,12 @@ export function GenerateImageDialog({
             <>
               <div className="space-y-2">
                 <Label htmlFor="img-prompt">Describe the image</Label>
-                <textarea
+                <Textarea
                   id="img-prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="A minimalist geometric logo of a coffee cup, deep navy and gold, flat vector"
                   rows={3}
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                   autoFocus
                 />
               </div>

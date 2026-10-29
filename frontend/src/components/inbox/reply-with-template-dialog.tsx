@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CornerUpLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -103,11 +104,10 @@ export function ReplyWithTemplateDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="reply-template">Template</Label>
-            <select
+            <NativeSelect
               id="reply-template"
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             >
               <option value="">Select a template…</option>
               {templates.data?.items.map((t) => (
@@ -115,7 +115,7 @@ export function ReplyWithTemplateDialog({
                   {t.name}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="space-y-2">

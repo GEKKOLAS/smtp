@@ -1,6 +1,7 @@
 "use client";
 
 import { auditLabel, listAuditLogs } from "@/lib/api/audit";
+import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,29 +30,27 @@ export default function AuditPage() {
       {isError && <p className="text-sm text-destructive">Could not load your activity.</p>}
 
       {data && data.items.length === 0 && (
-        <div className="rounded-lg border border-dashed py-16 text-center">
-          <p className="text-sm text-muted-foreground">Security events will appear here.</p>
-        </div>
+        <EmptyState icon={ShieldCheck} title="No activity yet" description="Sign-ins, password changes and API keys will be recorded here." />
       )}
 
       {data && data.items.length > 0 && (
-        <Card>
+        <Card className="py-0">
           <CardContent className="p-0">
-            <ul className="divide-y">
+            <ul className="divide-y-2 dark:divide-y dark:divide-border/60">
               {data.items.map((log) => (
-                <li key={log.id} className="flex items-center justify-between gap-4 px-6 py-3">
+                <li key={log.id} className="flex items-center justify-between gap-4 px-4 py-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{auditLabel(log.action)}</span>
+                      <span className="text-sm font-semibold">{auditLabel(log.action)}</span>
                       {log.action.startsWith("auth.login_failed") && (
                         <Badge variant="destructive">Failed</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-mono text-[11px] text-muted-foreground">
                       {log.ip ?? "unknown IP"} · {formatWhen(log.createdAt)}
                     </p>
                   </div>
-                  <code className="shrink-0 text-xs text-muted-foreground">{log.action}</code>
+                  <code className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{log.action}</code>
                 </li>
               ))}
             </ul>

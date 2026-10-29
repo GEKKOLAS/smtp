@@ -7,6 +7,8 @@ import { ApiError } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/query-keys";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
+import { NativeSelect } from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,42 +115,39 @@ function ComposeInner() {
         <CardContent className="space-y-4 py-5">
           <div className="space-y-2">
             <Label htmlFor="account">From account</Label>
-            <select
+            <NativeSelect
               id="account"
               value={effectiveAccount}
               onChange={(e) => setAccountId(e.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             >
               {activeAccounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.emailAddress} ({a.provider})</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="template">Template</Label>
-            <select
+            <NativeSelect
               id="template"
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             >
               <option value="">Select a template…</option>
               {templates.data?.items.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="recipients">Recipients</Label>
-            <textarea
+            <Textarea
               id="recipients"
               value={recipientsText}
               onChange={(e) => setRecipientsText(e.target.value)}
               placeholder="Comma, semicolon, or newline separated email addresses"
               rows={3}
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
             />
             <p className="text-xs text-muted-foreground">{recipients.length} recipient(s), 50 max</p>
           </div>

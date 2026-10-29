@@ -57,8 +57,10 @@ export function UploadDropzone({ onUploaded }: { onUploaded: () => void }) {
           setDragging(false);
           if (e.dataTransfer.files.length) void upload(e.dataTransfer.files);
         }}
-        className={`flex w-full flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
-          dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50"
+        className={`flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
+          dragging
+            ? "border-foreground bg-primary/30 dark:border-primary dark:bg-primary/5"
+            : "border-foreground/40 bg-card/50 hover:border-foreground dark:border-muted-foreground/25 dark:bg-transparent dark:hover:border-muted-foreground/50"
         }`}
       >
         <p className="text-sm font-medium">Drop files here or click to upload</p>

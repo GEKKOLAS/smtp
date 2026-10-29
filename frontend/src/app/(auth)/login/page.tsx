@@ -28,6 +28,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
+  const justReset = searchParams.get("reset") === "1";
 
   const {
     register,
@@ -61,6 +62,11 @@ function LoginForm() {
           })}
           noValidate
         >
+          {justReset && !formError && (
+            <p role="status" className="rounded-md bg-success-soft px-3 py-2 text-sm text-success ring-1 ring-current">
+              Password updated. Sign in with your new password.
+            </p>
+          )}
           {formError && (
             <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {formError}

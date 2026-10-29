@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Code2,
@@ -166,13 +167,12 @@ export function NewTemplateDialog() {
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="ai-prompt">Describe your email</Label>
-                <textarea
+                <Textarea
                   id="ai-prompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="A warm welcome email for new subscribers to my coffee shop, with a 10% off first order button"
                   rows={3}
-                  className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                 />
               </div>
 
@@ -279,13 +279,13 @@ export function NewTemplateDialog() {
           {mode === "import" && (
             <div className="space-y-2">
               <Label htmlFor="import-html">HTML</Label>
-              <textarea
+              <Textarea
                 id="import-html"
                 value={importHtml}
                 onChange={(e) => setImportHtml(e.target.value)}
                 placeholder="<html>…</html>"
                 rows={6}
-                className="w-full rounded-md border bg-background px-3 py-2 font-mono text-xs"
+                className="font-mono text-xs md:text-xs"
               />
               <p className="text-xs text-muted-foreground">
                 Content is sanitized and CSS is inlined for email on every render.

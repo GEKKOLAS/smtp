@@ -13,3 +13,12 @@ export function formatBytes(bytes: number): string {
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
 }
+
+/** Time of day for today's dates, otherwise a short "Oct 28" — the usual mail-list format. */
+export function formatMailTime(iso: string | null): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return date.toDateString() === new Date().toDateString()
+    ? date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}

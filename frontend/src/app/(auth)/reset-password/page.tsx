@@ -44,7 +44,13 @@ function RequestResetForm() {
             If an account exists for that email, we&apos;ve sent a link to reset your password.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {process.env.NODE_ENV === "development" && (
+            <p className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
+              Local dev: without a transactional email sender (<code>EmailSender:ApiKey</code>), no email goes out
+              and the reset link is printed in the API log instead.
+            </p>
+          )}
           <Button asChild variant="outline" className="w-full">
             <Link href="/login">Back to sign in</Link>
           </Button>

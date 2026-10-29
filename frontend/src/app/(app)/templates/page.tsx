@@ -3,6 +3,7 @@
 import { archiveTemplate, deleteTemplate, duplicateTemplate, listTemplates } from "@/lib/api/templates";
 import { formatDate } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
+import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { NewTemplateDialog } from "@/components/templates/new-template-dialog";
 import { TemplatePreviewThumb } from "@/components/templates/template-preview-thumb";
@@ -55,6 +56,7 @@ export default function TemplatesPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         icon={LayoutTemplate}
+        eyebrow={data ? `${data.totalCount} ${archived ? "archived" : "active"}` : undefined}
         title="Templates"
         description="Reusable, responsive email designs."
         action={<NewTemplateDialog />}
@@ -79,22 +81,24 @@ export default function TemplatesPage() {
       {isError && <p className="text-sm text-destructive">Could not load templates.</p>}
 
       {data && data.items.length === 0 && (
-        <div className="rounded-lg border border-dashed py-16 text-center">
-          <p className="mb-4 text-sm text-muted-foreground">
-            {search ? "No templates match your search." : "No templates yet."}
-          </p>
-          {!search && !archived && <NewTemplateDialog />}
-        </div>
+        <EmptyState
+          icon={LayoutTemplate}
+          title={search ? "No templates match your search" : archived ? "Nothing archived" : "No templates yet"}
+          description={
+            !search && !archived ? "Design one visually, write MJML, or let AI draft it from a prompt." : undefined
+          }
+          action={!search && !archived ? <NewTemplateDialog /> : undefined}
+        />
       )}
 
       {data && data.items.length > 0 && (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {data.items.map((template) => (
-            <li key={template.id}>
+            <li key={template.id} className="odd:-rotate-[0.6deg] even:rotate-[0.5deg] dark:odd:rotate-0 dark:even:rotate-0">
               <Card className="flex h-full flex-col overflow-hidden py-0">
                 <Link
                   href={`/templates/${template.id}/edit`}
-                  className="block border-b border-border/70 transition-opacity hover:opacity-90"
+                  className="block border-b-2 transition-opacity hover:opacity-90 dark:border-b"
                 >
                   <TemplatePreviewThumb versionId={template.currentVersionId} />
                 </Link>
@@ -103,7 +107,7 @@ export default function TemplatesPage() {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/templates/${template.id}/edit`}
-                        className="truncate font-medium hover:underline"
+                        className="truncate font-bold hover:underline dark:font-semibold"
                       >
                         {template.name}
                       </Link>
@@ -111,7 +115,7 @@ export default function TemplatesPage() {
                         <Badge variant="secondary">v{template.currentVersionNumber}</Badge>
                       )}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       {template.description || "No description"} · updated {formatDate(template.updatedAt)}
                     </p>
                   </div>

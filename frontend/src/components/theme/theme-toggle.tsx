@@ -10,14 +10,15 @@ export function ThemeToggle({ className }: { className?: string }) {
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="outline"
       size="icon"
       aria-label="Toggle theme"
+      title="Toggle light / dark"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       className={className}
     >
-      <Sun className="size-4 dark:hidden" />
-      <Moon className="hidden size-4 dark:block" />
+      <Moon className="size-4 dark:hidden" />
+      <Sun className="hidden size-4 dark:block" />
     </Button>
   );
 }

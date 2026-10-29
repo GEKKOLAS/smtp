@@ -4,6 +4,7 @@ import { listAssets } from "@/lib/api/assets";
 import { formatBytes } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { Asset } from "@/lib/schemas/assets";
+import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { AssetDetailSheet } from "@/components/assets/asset-detail-sheet";
 import { AssetThumb } from "@/components/assets/asset-thumb";
@@ -42,6 +43,7 @@ export default function AssetsPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         icon={ImageIcon}
+        eyebrow={data ? `${data.totalCount} ${data.totalCount === 1 ? "file" : "files"}` : undefined}
         title="Asset library"
         description="Upload images, GIFs, and files to use in your templates."
         action={<GenerateImageDialog onGenerated={refresh} />}
@@ -71,33 +73,33 @@ export default function AssetsPage() {
       {isError && <p className="text-sm text-destructive">Could not load your assets.</p>}
 
       {data && data.items.length === 0 && (
-        <div className="rounded-lg border border-dashed py-16 text-center">
-          <p className="text-sm text-muted-foreground">
-            {search ? "No assets match your search." : "No assets yet — upload your first file above."}
-          </p>
-        </div>
+        <EmptyState
+          icon={ImageIcon}
+          title={search ? "No assets match your search" : "No assets yet"}
+          description={search ? undefined : "Drop your first image or file in the box above, or generate one with AI."}
+        />
       )}
 
       {data && data.items.length > 0 && (
-        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
           {data.items.map((asset) => (
-            <li key={asset.id}>
+            <li key={asset.id} className="odd:-rotate-[0.6deg] even:rotate-[0.5deg] dark:odd:rotate-0 dark:even:rotate-0">
               <button
                 type="button"
                 onClick={() => setSelected(asset)}
-                className="group w-full overflow-hidden rounded-lg border text-left transition-colors hover:border-foreground/30"
+                className="group w-full overflow-hidden rounded-xl border-2 bg-card text-left shadow-hard press dark:border dark:shadow-none dark:hover:border-input"
               >
                 <div className="relative aspect-square">
                   <AssetThumb asset={asset} className="flex h-full w-full items-center justify-center" />
                   {asset.access === "public" && (
-                    <Badge className="absolute right-1.5 top-1.5" variant="secondary">
+                    <Badge className="absolute top-2 right-2" variant="secondary">
                       Public
                     </Badge>
                   )}
                 </div>
-                <div className="border-t p-2">
-                  <p className="truncate text-xs font-medium">{asset.originalFilename}</p>
-                  <p className="text-xs text-muted-foreground">{formatBytes(asset.sizeBytes)}</p>
+                <div className="border-t-2 px-2.5 py-2 dark:border-t">
+                  <p className="truncate text-xs font-bold dark:font-medium">{asset.originalFilename}</p>
+                  <p className="font-mono text-[11px] text-muted-foreground">{formatBytes(asset.sizeBytes)}</p>
                 </div>
               </button>
             </li>

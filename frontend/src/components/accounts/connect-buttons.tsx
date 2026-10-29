@@ -2,14 +2,28 @@
 
 import { startConnect } from "@/lib/api/accounts";
 import { ApiError } from "@/lib/api/client";
-import { oauthErrorMessage } from "@/lib/accounts-copy";
+import { oauthErrorMessage, providerLabels } from "@/lib/accounts-copy";
 import type { Provider } from "@/lib/schemas/accounts";
+import { ProviderLogo } from "@/components/accounts/provider-logo";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export function ConnectButtons({ variant = "default" }: { variant?: "default" | "outline" }) {
+const PROVIDERS: { provider: Provider; detail: string }[] = [
+  { provider: "gmail", detail: "Gmail / Google Workspace" },
+  { provider: "outlook", detail: "Outlook / Microsoft 365" },
+];
+
+export function ConnectButtons({
+  variant = "outline",
+  stacked = false,
+}: {
+  variant?: "default" | "outline";
+  /** Full-width rows instead of an inline wrap. */
+  stacked?: boolean;
+}) {
   const [pending, setPending] = useState<Provider | null>(null);
 
   const connect = useMutation({
@@ -27,21 +41,20 @@ export function ConnectButtons({ variant = "default" }: { variant?: "default" | 
   });
 
   return (
-    <div className="flex flex-wrap gap-3">
-      <Button
-        variant={variant}
-        disabled={connect.isPending}
-        onClick={() => connect.mutate("gmail")}
-      >
-        {pending === "gmail" ? "Redirecting…" : "Connect Gmail"}
-      </Button>
-      <Button
-        variant={variant}
-        disabled={connect.isPending}
-        onClick={() => connect.mutate("outlook")}
-      >
-        {pending === "outlook" ? "Redirecting…" : "Connect Outlook"}
-      </Button>
+    <div className={cn("flex gap-3", stacked ? "w-full flex-col" : "flex-wrap")}>
+      {PROVIDERS.map(({ provider, detail }) => (
+        <Button
+          key={provider}
+          variant={variant}
+          size="lg"
+          disabled={connect.isPending}
+          onClick={() => connect.mutate(provider)}
+          className={cn("h-10 gap-2.5", stacked && "justify-start")}
+        >
+          <ProviderLogo provider={provider} className="size-6 rounded-md border text-xs" />
+          {pending === provider ? "Redirecting…" : stacked ? detail : `Connect ${providerLabels[provider]}`}
+        </Button>
+      ))}
     </div>
   );
 }

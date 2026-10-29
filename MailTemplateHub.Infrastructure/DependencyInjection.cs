@@ -57,7 +57,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddScoped<IAuditWriter, AuditWriter>();
-        services.AddSingleton<ISystemEmailSender, LoggingSystemEmailSender>();
+        AddSystemEmail(services, configuration);
 
         AddOAuth(services);
         AddStorage(services);
@@ -99,6 +99,30 @@ public static class DependencyInjection
         else
         {
             services.AddScoped<IAiImageGenerator, DisabledImageGenerator>();
+        }
+    }
+
+    /// <summary>
+    /// Resend when configured; otherwise dev logs the link and every other
+    /// environment gets the loud no-op, so a missing sender is never silent.
+    /// </summary>
+    private static void AddSystemEmail(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<EmailSenderOptions>().BindConfiguration(EmailSenderOptions.SectionName);
+
+        var email = configuration.GetSection(EmailSenderOptions.SectionName).Get<EmailSenderOptions>();
+        if (email?.IsConfigured == true)
+        {
+            services.AddHttpClient<ISystemEmailSender, ResendSystemEmailSender>(client =>
+                client.Timeout = TimeSpan.FromSeconds(15));
+        }
+        else if (configuration.GetValue("Auth:LogPasswordResetLinks", false))
+        {
+            services.AddSingleton<ISystemEmailSender, LoggingSystemEmailSender>();
+        }
+        else
+        {
+            services.AddSingleton<ISystemEmailSender, UnconfiguredSystemEmailSender>();
         }
     }
 

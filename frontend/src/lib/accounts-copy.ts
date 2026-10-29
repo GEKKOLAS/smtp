@@ -19,9 +19,9 @@ export function oauthErrorMessage(code: string): string {
   return oauthErrorMessages[code] ?? "The connection could not be completed. Please try again.";
 }
 
-export const accountStateCopy: Record<AccountState, { label: string; variant: "default" | "secondary" | "destructive" }> = {
-  active: { label: "Active", variant: "default" },
-  needs_reconnect: { label: "Needs reconnect", variant: "destructive" },
+export const accountStateCopy: Record<AccountState, { label: string; variant: "success" | "warning" | "secondary" }> = {
+  active: { label: "Active", variant: "success" },
+  needs_reconnect: { label: "Needs reconnect", variant: "warning" },
   revoked: { label: "Disconnected", variant: "secondary" },
 };
 

@@ -4,9 +4,11 @@ import { disconnectAccount, setDefaultAccount, startConnect, testAccount } from 
 import { accountStateCopy, providerLabels, stateReasonCopy } from "@/lib/accounts-copy";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { Account } from "@/lib/schemas/accounts";
+import { formatDate } from "@/lib/format";
+import { ProviderLogo } from "@/components/accounts/provider-logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -16,16 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Star } from "lucide-react";
-import { useState } from "react";
+import { Check, Star, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
+
+function Capability({ on, children }: { on: boolean; children: ReactNode }) {
+  return (
+    <span
+      className={`inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-xs font-semibold ${
+        on ? "bg-muted" : "text-muted-foreground line-through"
+      }`}
+    >
+      {on ? <Check className="size-3" strokeWidth={3} /> : <X className="size-3" />}
+      {children}
+    </span>
+  );
+}
 
 export function AccountCard({ account }: { account: Account }) {
   const queryClient = useQueryClient();
@@ -73,69 +82,76 @@ export function AccountCard({ account }: { account: Account }) {
   });
 
   const stateInfo = accountStateCopy[account.state];
+  const isActive = account.state === "active";
 
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between gap-4 py-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{providerLabels[account.provider]}</span>
-            {account.isDefault && (
-              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                <Star className="size-3 fill-current" /> Default
-              </span>
-            )}
-          </div>
-          <p className="truncate text-sm text-muted-foreground">{account.emailAddress}</p>
-          {account.state === "active" && !account.canReadInbox && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Sending only — reconnect to also read this inbox and reply with templates.
-            </p>
-          )}
-          {account.state === "needs_reconnect" && account.stateReason && (
-            <p className="mt-1 text-xs text-destructive">
-              {stateReasonCopy[account.stateReason] ?? "This account needs to be reconnected."}
-            </p>
-          )}
+    <Card className="h-full gap-4 px-5">
+      <div className="flex items-start gap-3">
+        <ProviderLogo provider={account.provider} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-bold dark:font-semibold">{account.emailAddress}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {providerLabels[account.provider]}
+            {account.displayName ? ` · ${account.displayName}` : ""}
+          </p>
         </div>
+        <Badge variant={stateInfo.variant}>{stateInfo.label}</Badge>
+      </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <Badge variant={stateInfo.variant}>{stateInfo.label}</Badge>
+      <div className="flex flex-wrap gap-1.5">
+        <Capability on={isActive}>Send</Capability>
+        <Capability on={isActive && account.canReadInbox}>Read inbox</Capability>
+        {account.isDefault && (
+          <Capability on>
+            <Star className="size-3 fill-current" /> Default sender
+          </Capability>
+        )}
+      </div>
 
-          {account.state === "needs_reconnect" ? (
-            <Button size="sm" onClick={() => reconnect.mutate()} disabled={reconnect.isPending}>
-              Reconnect
-            </Button>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Account actions">
-                  <MoreVertical className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {!account.isDefault && account.state === "active" && (
-                  <DropdownMenuItem onSelect={() => makeDefault.mutate()}>
-                    Make default
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onSelect={() => test.mutate()} disabled={test.isPending}>
-                  Test connection
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setConfirmOpen(true);
-                  }}
-                >
-                  Disconnect
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </CardContent>
+      {isActive && !account.canReadInbox && (
+        <p className="text-xs text-muted-foreground">
+          Sending only — reconnect to also read this inbox and reply with templates.
+        </p>
+      )}
+      {account.state === "needs_reconnect" && (
+        <p className="text-xs font-medium text-warning">
+          {(account.stateReason && stateReasonCopy[account.stateReason]) ??
+            "This account needs to be reconnected."}{" "}
+          Sends from it are paused until you sign in again.
+        </p>
+      )}
+
+      <p className="font-mono text-[11px] text-muted-foreground">
+        Connected {formatDate(account.connectedAt)} ·{" "}
+        {account.lastUsedAt ? `last used ${formatDate(account.lastUsedAt)}` : "not used yet"}
+      </p>
+
+      <div className="mt-auto flex flex-wrap items-center gap-2">
+        {account.state === "needs_reconnect" && (
+          <Button size="sm" onClick={() => reconnect.mutate()} disabled={reconnect.isPending}>
+            {reconnect.isPending ? "Redirecting…" : "Reconnect"}
+          </Button>
+        )}
+        {isActive && !account.isDefault && (
+          <Button size="sm" variant="outline" onClick={() => makeDefault.mutate()} disabled={makeDefault.isPending}>
+            Make default
+          </Button>
+        )}
+        {account.state !== "revoked" && (
+          <Button size="sm" variant="outline" onClick={() => test.mutate()} disabled={test.isPending}>
+            {test.isPending ? "Testing…" : "Test connection"}
+          </Button>
+        )}
+        <span className="flex-1" />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-muted-foreground hover:text-destructive"
+          onClick={() => setConfirmOpen(true)}
+        >
+          Disconnect
+        </Button>
+      </div>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>

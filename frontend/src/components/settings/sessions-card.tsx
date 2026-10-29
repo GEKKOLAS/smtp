@@ -48,7 +48,7 @@ export function SessionsCard() {
                   <p className="truncate text-sm font-medium">
                     {session.userAgent ?? "Unknown device"}
                     {session.current && (
-                      <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      <span className="ml-2 rounded-full bg-link/10 px-2 py-0.5 text-xs font-medium text-link">
                         This device
                       </span>
                     )}

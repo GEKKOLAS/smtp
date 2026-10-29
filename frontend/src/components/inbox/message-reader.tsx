@@ -2,6 +2,7 @@
 
 import { getInboxMessage } from "@/lib/api/inbox";
 import { queryKeys } from "@/lib/query/query-keys";
+import { StampAvatar } from "@/components/app/stamp-avatar";
 import { ReplyWithTemplateDialog } from "@/components/inbox/reply-with-template-dialog";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -20,29 +21,38 @@ export function MessageReader({ accountId, messageId }: { accountId: string; mes
   if (isLoading) return <p className="p-6 text-sm text-muted-foreground">Loading message…</p>;
   if (isError || !data) return <p className="p-6 text-sm text-destructive">Could not load this message.</p>;
 
+  const sender = data.fromName ?? data.fromEmail;
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="space-y-3 border-b p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="truncate text-base font-semibold">{data.subject}</h2>
-            <p className="truncate text-sm text-muted-foreground">
-              {data.fromName ? `${data.fromName} <${data.fromEmail}>` : data.fromEmail}
-            </p>
-            {data.receivedAt && (
-              <p className="text-xs text-muted-foreground">
-                {new Date(data.receivedAt).toLocaleString()}
-              </p>
-            )}
-          </div>
-          <Button size="sm" className="shrink-0" onClick={() => setReplyOpen(true)}>
-            <CornerUpLeft className="size-3.5" />
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="space-y-4 border-b-2 p-5 dark:border-b">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h2 className="min-w-0 flex-1 font-heading text-2xl leading-tight font-bold tracking-[-0.025em] dark:text-lg dark:font-semibold dark:tracking-tight">
+            {data.subject || "(no subject)"}
+          </h2>
+          <Button variant="gradient" className="shrink-0" onClick={() => setReplyOpen(true)}>
+            <CornerUpLeft />
             Reply with template
           </Button>
         </div>
-      </div>
+        <div className="flex items-center gap-3">
+          <StampAvatar name={sender} className="size-10 text-[13px]" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm">
+              <span className="font-bold dark:font-semibold">{sender}</span>
+              {data.fromName && <span className="text-muted-foreground"> &lt;{data.fromEmail}&gt;</span>}
+            </p>
+            {data.to.length > 0 && <p className="truncate text-xs text-muted-foreground">to {data.to.join(", ")}</p>}
+          </div>
+          {data.receivedAt && (
+            <p className="shrink-0 font-mono text-xs text-muted-foreground">
+              {new Date(data.receivedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+            </p>
+          )}
+        </div>
+      </header>
 
-      <div className="flex-1 overflow-auto bg-muted/30 p-4">
+      <div className="flex min-h-0 flex-1 flex-col bg-muted/60 p-4">
         {data.html ? (
           // Sender-controlled markup: sanitized server-side and framed with a
           // fully locked sandbox (no same-origin, no scripts) on top of that.
@@ -50,10 +60,10 @@ export function MessageReader({ accountId, messageId }: { accountId: string; mes
             title={`Message: ${data.subject}`}
             sandbox=""
             srcDoc={data.html}
-            className="h-[60vh] w-full rounded-md border bg-white"
+            className="min-h-[24rem] w-full flex-1 rounded-lg border-2 bg-white dark:border"
           />
         ) : (
-          <pre className="rounded-md border bg-background p-4 text-sm whitespace-pre-wrap">
+          <pre className="flex-1 overflow-auto rounded-lg border-2 bg-card p-4 font-sans text-sm whitespace-pre-wrap dark:border">
             {data.text ?? "(no content)"}
           </pre>
         )}
