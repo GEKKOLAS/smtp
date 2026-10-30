@@ -55,7 +55,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
 
 export const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
-const STATE_DOT: Record<Account["state"], string> = {
+export const STATE_DOT: Record<Account["state"], string> = {
   active: "bg-[#4ade80]",
   needs_reconnect: "bg-[#fbbf24]",
   revoked: "bg-[#f87171]",
@@ -66,13 +66,10 @@ function initials(name: string) {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "U";
 }
 
-export function AppNav({ user }: { user: User }) {
-  const pathname = usePathname();
+export function useSignOut() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: accounts } = useQuery({ queryKey: queryKeys.accounts, queryFn: listAccounts });
-
-  const logoutMutation = useMutation({
+  return useMutation({
     mutationFn: logout,
     onSettled: async () => {
       queryClient.setQueryData(queryKeys.me, null);
@@ -80,9 +77,15 @@ export function AppNav({ user }: { user: User }) {
       router.replace("/login");
     },
   });
+}
+
+export function AppNav({ user }: { user: User }) {
+  const pathname = usePathname();
+  const { data: accounts } = useQuery({ queryKey: queryKeys.accounts, queryFn: listAccounts });
+  const logoutMutation = useSignOut();
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar px-3 py-4 text-sidebar-foreground">
+    <aside className="hidden w-64 shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar px-3 py-4 text-sidebar-foreground lg:flex">
       <Link href="/dashboard" className="rounded-xl px-2 py-1.5">
         <LogoMark />
       </Link>

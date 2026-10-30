@@ -2,6 +2,7 @@
 
 import { login } from "@/lib/api/auth";
 import { applyApiError } from "@/lib/api/error-message";
+import { homePath } from "@/lib/hooks/use-media-query";
 import { queryKeys } from "@/lib/query/query-keys";
 import { type LoginInput, loginSchema } from "@/lib/schemas/auth";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ function LoginForm() {
     onSuccess: async ({ user }) => {
       queryClient.setQueryData(queryKeys.me, user);
       const next = searchParams.get("next");
-      router.replace(next && next.startsWith("/") ? next : "/dashboard");
+      router.replace(next && next.startsWith("/") ? next : homePath());
     },
     onError: (error) => setFormError(applyApiError(error, setError)),
   });

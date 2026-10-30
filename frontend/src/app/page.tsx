@@ -1,5 +1,6 @@
 "use client";
 
+import { homePath } from "@/lib/hooks/use-media-query";
 import { useSession } from "@/lib/hooks/use-session";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -10,7 +11,7 @@ export default function Home() {
 
   useEffect(() => {
     if (isLoading) return;
-    router.replace(user ? "/dashboard" : "/login");
+    router.replace(user ? homePath() : "/login");
   }, [isLoading, user, router]);
 
   return (

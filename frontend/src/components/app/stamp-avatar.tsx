@@ -14,7 +14,7 @@ export function initialsOf(name: string) {
 }
 
 /** Same sender, same color — a cheap stable hash keeps the list from shuffling hues on refetch. */
-function toneFor(name: string) {
+export function toneFor(name: string) {
   let hash = 0;
   for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) | 0;
   return TONES[Math.abs(hash) % TONES.length];

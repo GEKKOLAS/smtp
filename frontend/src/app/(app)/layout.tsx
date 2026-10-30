@@ -2,6 +2,7 @@
 
 import { AppNav, NAV_ITEMS } from "@/components/app/app-nav";
 import { GradientBackdrop } from "@/components/app/gradient-backdrop";
+import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-shell";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/hooks/use-session";
@@ -46,7 +47,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <GradientBackdrop />
       <AppNav user={user} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b-2 bg-background/80 px-8 backdrop-blur-xl dark:border-b">
+        <MobileTopBar user={user} />
+        <header className="hidden h-14 shrink-0 items-center justify-between gap-4 border-b-2 bg-background/80 px-8 backdrop-blur-xl lg:flex dark:border-b">
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
             <span className="truncate">{firstName}&apos;s workspace</span>
             {activeLabel && (
@@ -68,8 +70,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto px-8 py-8">{children}</main>
+        {/* Bottom padding on phones clears the fixed tab bar. */}
+        <main className="flex-1 overflow-y-auto px-4 pt-2 pb-28 lg:px-8 lg:py-8">{children}</main>
       </div>
+      <MobileTabBar />
     </div>
   );
 }

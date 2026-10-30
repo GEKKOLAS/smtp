@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { isActiveStatus } from "@/components/sends/send-status-badge";
 import { SendsTable } from "@/components/sends/sends-table";
+import { groupByDay, SendTimeline } from "@/components/sends/send-timeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,9 +81,26 @@ export default function SendsPage() {
       )}
 
       {data && data.items.length > 0 && (
-        <Card className="gap-0 py-0 [&_th]:border-t-0">
-          <SendsTable jobs={data.items} accountEmail={accountEmail} />
-        </Card>
+        <>
+          <Card className="gap-0 py-0 max-lg:hidden [&_th]:border-t-0">
+            <SendsTable jobs={data.items} accountEmail={accountEmail} />
+          </Card>
+          <div className="space-y-5 lg:hidden">
+            {groupByDay(data.items).map((group) => (
+              <section key={group.label} className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <h2 className="font-heading text-xl font-bold tracking-[-0.01em] dark:text-base dark:font-semibold">
+                    {group.label}
+                  </h2>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {group.jobs.length} {group.jobs.length === 1 ? "send" : "sends"}
+                  </span>
+                </div>
+                <SendTimeline jobs={group.jobs} />
+              </section>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
