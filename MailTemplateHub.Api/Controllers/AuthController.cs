@@ -39,7 +39,10 @@ public sealed class AuthController(AuthCookies cookies) : ControllerBase
     {
         var result = await handler.HandleAsync(new LoginCommand(request.Email, request.Password), ct);
         cookies.Issue(Response, result.SessionToken!, result.CsrfToken!);
-        return Ok(new { user = result.User });
+        // The CSRF value is also in the body for native clients (the mobile app), which keep the
+        // session cookie in the OS cookie store but cannot read cookies to echo the double-submit header.
+        // Register deliberately omits it: a duplicate sign-up must stay indistinguishable from a real one.
+        return Ok(new { user = result.User, csrfToken = result.CsrfToken });
     }
 
     [HttpPost("logout")]

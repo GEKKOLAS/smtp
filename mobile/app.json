@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Mail Template Hub",
+    "slug": "mail-template-hub",
+    "scheme": "mailtemplatehub",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.mailtemplatehub.mobile"
+    },
+    "android": {
+      "package": "app.mailtemplatehub.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E7E2FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#E7E2FF",
+          "dark": { "backgroundColor": "#0A0A0F" }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -59,6 +59,21 @@ public class AuthFlowTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Login_returns_the_csrf_token_for_native_clients()
+    {
+        var email = UniqueEmail();
+        await NewSession().PostAsync("/api/v1/auth/register",
+            new { email, password = Password, displayName = "Ada" });
+
+        var session = NewSession();
+        var login = await session.PostAsync("/api/v1/auth/login", new { email, password = Password });
+
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+        Assert.NotNull(session.CsrfToken);
+        Assert.Equal(session.CsrfToken, (await Json(login)).GetProperty("csrfToken").GetString());
+    }
+
+    [Fact]
     public async Task Login_with_wrong_password_returns_401_with_error_code()
     {
         var email = UniqueEmail();
