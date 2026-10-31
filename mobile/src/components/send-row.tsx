@@ -2,6 +2,7 @@ import type { SendJob, SendStatus } from "@/api/schemas";
 import { StatusBadge, Txt } from "@/components/ui";
 import { formatMailTime } from "@/hooks/data";
 import { useTheme } from "@/theme/theme";
+import { MailX, MousePointerClick } from "lucide-react-native";
 import { View } from "react-native";
 
 const DOT: Record<SendStatus, string | null> = {
@@ -15,13 +16,46 @@ const DOT: Record<SendStatus, string | null> = {
   cancelled: "#8F8FA3",
 };
 
+// Same rules as the web app's lib/send-summary.ts: bounced recipients stay in the
+// total and count as accepted (accepted is not delivered).
 function summary(job: SendJob) {
   const c = job.recipientCounts;
-  const total = c.pending + c.sending + c.sent + c.failed + c.cancelled;
+  const total = c.pending + c.sending + c.sent + c.failed + c.cancelled + c.bounced;
   if (job.isTest) return "test send";
   if (job.isReply) return "reply";
   if (total === 1) return "1 recipient";
-  return `${c.sent} of ${total} delivered`;
+  return `${c.sent + c.bounced} of ${total} accepted`;
+}
+
+/** Bounces from delivery reports and clicks by people (not link scanners); clicks only for tracked sends that went out. */
+function Outcomes({ job }: { job: SendJob }) {
+  const { theme: t } = useTheme();
+  const c = job.recipientCounts;
+  const bounced = c.bounced;
+  const clicked = job.trackClicks && c.sent + c.bounced > 0 ? job.uniqueClickers : null;
+  if (bounced === 0 && clicked === null) return null;
+
+  const clickInk = clicked ? t.color.info : t.color.muted;
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 12, marginTop: 4 }}>
+      {bounced > 0 && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <MailX size={13} color={t.color.warning} />
+          <Txt v="mono" style={{ color: t.color.warning }}>
+            {bounced} bounced
+          </Txt>
+        </View>
+      )}
+      {clicked !== null && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <MousePointerClick size={13} color={clickInk} />
+          <Txt v="mono" style={{ color: clickInk }}>
+            {clicked > 0 ? `${clicked} clicked` : "no clicks yet"}
+          </Txt>
+        </View>
+      )}
+    </View>
+  );
 }
 
 /** One send in an activity list: status dot, subject, when/how many, and the status stamp. */
@@ -58,6 +92,7 @@ export function SendRow({ job, first }: { job: SendJob; first?: boolean }) {
           {job.status === "scheduled" && job.scheduledAt ? `for ${formatMailTime(job.scheduledAt)}` : formatMailTime(job.createdAt)} ·{" "}
           {summary(job)}
         </Txt>
+        <Outcomes job={job} />
       </View>
       <StatusBadge status={job.status} />
     </View>

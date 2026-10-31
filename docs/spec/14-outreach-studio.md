@@ -1,7 +1,7 @@
 # 14 — Outreach Studio (phase 1 of the Developer & Creative Toolkit)
 
-**Version:** 0.3 · **Date:** 2026-10-30 · **Status:** F1–F4 implemented on `feat/outreach-studio`;
-the phone timelines (F4.4, last bullet) are still to do
+**Version:** 0.4 · **Date:** 2026-10-31 · **Status:** F1–F4 implemented, including the phone
+Activity timelines (web and Expo)
 
 Mail Template Hub is phase 1 ("Outreach Studio") of a larger ecosystem whose next modules
 are JobHunter OS and Application Copilot. Most of Outreach Studio already exists (visual
@@ -203,7 +203,11 @@ No open rate. Conversions are measured in the user's own analytics through UTM t
   bounced), per-template table (sends, recipients, bounce rate, click rate), top links.
 - Send detail gains a results card (accepted, bounced, click rate, per-link clicks) and
   bounce/clicked badges per recipient.
-- *To do:* the phone Activity timeline (web and the Expo app) showing bounces and clicks.
+- The phone Activity timeline (web below `lg` and the Expo app) shows, under each send, its
+  bounces and, for tracked sends that went out, how many people clicked ("no clicks yet" when
+  none). `GET /sends` and `GET /sends/{id}` carry `uniqueClickers` for this (human clicks
+  only; 0 for untracked sends). Bounced recipients count as accepted, so the "N of M
+  accepted" line and the history table keep them in the total.
 
 ## Testing
 

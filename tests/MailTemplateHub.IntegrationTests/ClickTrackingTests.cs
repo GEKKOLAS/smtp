@@ -236,6 +236,12 @@ public partial class ClickTrackingTests(ApiFactory factory) : IClassFixture<ApiF
         Assert.Equal(1, summary.GetProperty("templates")[0].GetProperty("uniqueClickers").GetInt32());
         Assert.Equal("https://shop.test/menu?x=1", summary.GetProperty("topLinks")[0].GetProperty("url").GetString());
 
+        // The send list and detail carry the same people count, for the phone Activity timeline.
+        var listed = await (await session.GetAsync("/api/v1/sends")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1, listed.GetProperty("items")[0].GetProperty("uniqueClickers").GetInt32());
+        var detail = await (await session.GetAsync($"/api/v1/sends/{jobId}")).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(1, detail.GetProperty("job").GetProperty("uniqueClickers").GetInt32());
+
         var stranger = NewSession();
         await stranger.PostAsync("/api/v1/auth/register",
             new { email = $"user-{Guid.NewGuid():N}@example.com", password = Password, displayName = "Eve" });

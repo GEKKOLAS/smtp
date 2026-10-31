@@ -30,6 +30,7 @@ export const sendJobSchema = z.object({
   replyToMessageId: z.string().nullable(),
   trackClicks: z.boolean().default(false),
   utmCampaign: z.string().nullable().default(null),
+  uniqueClickers: z.number().default(0),
 });
 export type SendJob = z.infer<typeof sendJobSchema>;
 

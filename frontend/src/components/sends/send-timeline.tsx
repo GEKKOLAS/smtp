@@ -1,6 +1,8 @@
 import type { SendJob, SendStatus } from "@/lib/schemas/sends";
 import { SendStatusBadge } from "@/components/sends/send-status-badge";
 import { formatMailTime } from "@/lib/format";
+import { sendOutcomes, sendSummary } from "@/lib/send-summary";
+import { MailX, MousePointerClick } from "lucide-react";
 import Link from "next/link";
 
 const DOT: Record<SendStatus, string> = {
@@ -14,13 +16,26 @@ const DOT: Record<SendStatus, string> = {
   cancelled: "bg-muted-foreground",
 };
 
-function summary(job: SendJob) {
-  const c = job.recipientCounts;
-  const total = c.pending + c.sending + c.sent + c.failed + c.cancelled;
-  if (job.isTest) return "test send";
-  if (job.isReply) return "reply";
-  if (total === 1) return "1 recipient";
-  return `${c.sent} of ${total} delivered`;
+/** Bounces from delivery reports and clicks by people (not link scanners), when there are any to show. */
+function Outcomes({ job }: { job: SendJob }) {
+  const { bounced, clicked } = sendOutcomes(job);
+  if (bounced === 0 && clicked === null) return null;
+  return (
+    <span className="mt-1 flex flex-wrap gap-x-3 font-mono text-xs">
+      {bounced > 0 && (
+        <span className="inline-flex items-center gap-1 text-warning">
+          <MailX aria-hidden className="size-3.5" />
+          {bounced} bounced
+        </span>
+      )}
+      {clicked !== null && (
+        <span className={`inline-flex items-center gap-1 ${clicked > 0 ? "text-info" : "text-muted-foreground"}`}>
+          <MousePointerClick aria-hidden className="size-3.5" />
+          {clicked > 0 ? `${clicked} clicked` : "no clicks yet"}
+        </span>
+      )}
+    </span>
+  );
 }
 
 /** Send jobs as a compact activity list; the phone counterpart of `SendsTable`. */
@@ -40,8 +55,9 @@ export function SendTimeline({ jobs }: { jobs: SendJob[] }) {
                 {job.scheduledAt && job.status === "scheduled"
                   ? `for ${formatMailTime(job.scheduledAt)}`
                   : formatMailTime(job.createdAt)}{" "}
-                · {summary(job)}
+                · {sendSummary(job)}
               </span>
+              <Outcomes job={job} />
             </span>
             <SendStatusBadge status={job.status} />
           </Link>

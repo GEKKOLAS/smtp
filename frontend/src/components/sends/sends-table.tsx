@@ -1,16 +1,12 @@
 import type { SendJob } from "@/lib/schemas/sends";
 import { SendStatusBadge } from "@/components/sends/send-status-badge";
 import { formatDate } from "@/lib/format";
+import { acceptedCount, recipientTotal } from "@/lib/send-summary";
 import Link from "next/link";
 
 const TH =
   "border-y-2 px-4 py-2 font-mono text-[11px] font-bold tracking-wide uppercase dark:border-y dark:font-sans dark:text-xs dark:font-medium dark:tracking-normal dark:normal-case";
 const TD = "border-b-2 px-4 py-3 dark:border-b dark:border-border/60";
-
-function totalRecipients(job: SendJob) {
-  const c = job.recipientCounts;
-  return c.pending + c.sending + c.sent + c.failed + c.cancelled;
-}
 
 /** Send jobs as table rows. Pass `accountEmail` to show which mailbox each one went out from. */
 export function SendsTable({ jobs, accountEmail }: { jobs: SendJob[]; accountEmail?: Map<string, string> }) {
@@ -21,7 +17,7 @@ export function SendsTable({ jobs, accountEmail }: { jobs: SendJob[]; accountEma
           <tr className="text-left text-muted-foreground">
             <th className={TH}>Subject</th>
             {accountEmail && <th className={TH}>From</th>}
-            <th className={`${TH} text-right`}>Delivered</th>
+            <th className={`${TH} text-right`}>Accepted</th>
             <th className={TH}>Status</th>
             <th className={`${TH} text-right`}>Date</th>
           </tr>
@@ -38,10 +34,13 @@ export function SendsTable({ jobs, accountEmail }: { jobs: SendJob[]; accountEma
               </td>
               {accountEmail && <td className={`${TD} text-muted-foreground`}>{accountEmail.get(job.accountId) ?? "—"}</td>}
               <td className={`${TD} text-right font-mono`}>
-                {job.recipientCounts.sent}
-                <span className="text-muted-foreground">/{totalRecipients(job)}</span>
+                {acceptedCount(job.recipientCounts)}
+                <span className="text-muted-foreground">/{recipientTotal(job.recipientCounts)}</span>
                 {job.recipientCounts.failed > 0 && (
                   <span className="ml-1.5 text-destructive">{job.recipientCounts.failed} failed</span>
+                )}
+                {job.recipientCounts.bounced > 0 && (
+                  <span className="ml-1.5 text-warning">{job.recipientCounts.bounced} bounced</span>
                 )}
               </td>
               <td className={TD}>

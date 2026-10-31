@@ -46,7 +46,9 @@ public sealed class SendJobsHandler(
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return new PagedSendJobs(items.Select(SendJobDto.From).ToList(), page, pageSize, total);
+        var clickers = await UniqueClickersAsync(items, ct);
+        return new PagedSendJobs(
+            items.Select(j => SendJobDto.From(j, clickers.GetValueOrDefault(j.Id))).ToList(), page, pageSize, total);
     }
 
     public async Task<SendJobDetailDto> GetAsync(Guid id, CancellationToken ct)
@@ -62,8 +64,9 @@ public sealed class SendJobsHandler(
             .Select(e => new ProviderEventDto(e.EventType, e.HttpStatus, e.ProviderErrorCode, e.CreatedAt))
             .ToListAsync(ct);
 
+        var clickers = await UniqueClickersAsync([job], ct);
         return new SendJobDetailDto(
-            SendJobDto.From(job),
+            SendJobDto.From(job, clickers.GetValueOrDefault(job.Id)),
             job.Recipients.OrderBy(r => r.CreatedAt).Select(RecipientDto.From).ToList(),
             events);
     }
@@ -108,7 +111,9 @@ public sealed class SendJobsHandler(
         await db.SaveChangesAsync(ct);
 
         jobs.EnqueueSend(job.Id);
-        return SendJobDto.From(job);
+        // A partly failed send may already have clicks from the recipients it reached.
+        var clickers = await UniqueClickersAsync([job], ct);
+        return SendJobDto.From(job, clickers.GetValueOrDefault(job.Id));
     }
 
     public async Task<SendJobDto> RescheduleAsync(Guid id, DateTimeOffset scheduledAt, CancellationToken ct)
@@ -129,6 +134,19 @@ public sealed class SendJobsHandler(
         job.ScheduledAt = scheduledAt;
         await db.SaveChangesAsync(ct);
         return SendJobDto.From(job);
+    }
+
+    /// <summary>People who clicked, per tracked send; link-scanner clicks don't count.</summary>
+    private async Task<Dictionary<Guid, int>> UniqueClickersAsync(IEnumerable<EmailSendJob> sends, CancellationToken ct)
+    {
+        var tracked = sends.Where(j => j.TrackClicks).Select(j => j.Id).ToList();
+        if (tracked.Count == 0) return [];
+
+        return await db.TrackedLinks
+            .Where(l => tracked.Contains(l.SendJobId) && l.Clicks.Any(c => c.Classification == ClickClassifications.Human))
+            .GroupBy(l => l.SendJobId)
+            .Select(g => new { SendJobId = g.Key, Count = g.Select(l => l.RecipientId).Distinct().Count() })
+            .ToDictionaryAsync(x => x.SendJobId, x => x.Count, ct);
     }
 
     private async Task<EmailSendJob> LoadOwnedAsync(Guid id, CancellationToken ct) =>

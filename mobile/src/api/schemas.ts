@@ -113,11 +113,15 @@ export const sendJobSchema = z.object({
     sent: z.number(),
     failed: z.number(),
     cancelled: z.number(),
+    bounced: z.number().default(0),
   }),
   scheduledAt: z.string().nullable(),
   createdAt: z.string(),
   failureCode: z.string().nullable(),
   isReply: z.boolean(),
+  trackClicks: z.boolean().default(false),
+  /** People who clicked a tracked link; link scanners are not counted. */
+  uniqueClickers: z.number().default(0),
 });
 export type SendJob = z.infer<typeof sendJobSchema>;
 

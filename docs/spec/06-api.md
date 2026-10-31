@@ -190,8 +190,9 @@ per recipient (job values ∪ overrides ∪ defaults) — 422 lists
 `{ recipientEmail, missing: [names] }`; attachments owned + `ready`; **estimated total
 size ≤ 25 MB** (422 `send.too_large` with breakdown); `scheduledAt` window as above.
 Response `SendJob = { id, status, isTest, accountId, templateId, templateVersionNumber,
-subjectSnapshot, recipientCounts: { pending, sent, failed, cancelled }, scheduledAt,
-createdAt, completedAt, failureCode? }`.
+subjectSnapshot, recipientCounts: { pending, sending, sent, failed, cancelled, bounced },
+scheduledAt, createdAt, completedAt, failureCode?, trackClicks, utmCampaign?, uniqueClickers }`
+(the last three from spec 14 F4; `uniqueClickers` counts people, not link scanners).
 
 **POST /sends/test** body: `{ connectedEmailAccountId, templateVersionId, variables,
 attachments? }` — recipient forced to the user's login email (or connected address via

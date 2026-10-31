@@ -41,9 +41,13 @@ public sealed record SendJobDto(
     Guid Id, string Status, bool IsTest, Guid AccountId, Guid TemplateVersionId,
     string SubjectSnapshot, RecipientCounts RecipientCounts,
     DateTimeOffset? ScheduledAt, DateTimeOffset CreatedAt, DateTimeOffset? CompletedAt,
-    string? FailureCode, bool IsReply, string? ReplyToMessageId, bool TrackClicks, string? UtmCampaign)
+    string? FailureCode, bool IsReply, string? ReplyToMessageId, bool TrackClicks, string? UtmCampaign,
+    // Recipients with at least one human click (spec 14 F4); always 0 for untracked sends.
+    int UniqueClickers)
 {
-    public static SendJobDto From(EmailSendJob job) => new(
+    public static SendJobDto From(EmailSendJob job) => From(job, uniqueClickers: 0);
+
+    public static SendJobDto From(EmailSendJob job, int uniqueClickers) => new(
         job.Id,
         job.Status.ToString().ToLowerInvariant(),
         job.IsTest,
@@ -58,7 +62,8 @@ public sealed record SendJobDto(
         job.IsReply,
         job.ReplyToProviderMessageId,
         job.TrackClicks,
-        job.UtmCampaign);
+        job.UtmCampaign,
+        uniqueClickers);
 
     private static RecipientCounts Counts(IReadOnlyCollection<EmailSendRecipient> recipients) => new(
         recipients.Count(r => r.Status == RecipientStatus.Pending),
