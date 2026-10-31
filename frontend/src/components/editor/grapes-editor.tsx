@@ -1,6 +1,9 @@
 "use client";
 
 import { listAssets, setAssetVisibility, uploadFile } from "@/lib/api/assets";
+import { listBrandFonts, listBrandKits } from "@/lib/api/brand-kits";
+import { brandBlocks } from "@/lib/brand-blocks";
+import type { RewriteTarget } from "@/components/editor/copy-rewrite-dialog";
 import { useEffect, useRef } from "react";
 import "grapesjs/dist/css/grapes.min.css";
 import "./grapes-editor-theme.css";
@@ -8,6 +11,17 @@ import "./grapes-editor-theme.css";
 interface GrapesEditorProps {
   initialMjml: string;
   onChange: (mjml: string, projectData: unknown) => void;
+  /** Present when the AI copy assistant is available: adds "Rewrite" to text and button toolbars. */
+  onRewriteText?: (target: RewriteTarget) => void;
+}
+
+const REWRITABLE: Record<string, RewriteTarget["kind"]> = { "mj-text": "body", "mj-button": "cta" };
+
+const SPARKLE_ICON =
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>';
+
+function escapeText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -15,13 +29,15 @@ interface GrapesEditorProps {
  * the user's public images; uploads go through our presigned flow and are
  * auto-published so the resulting URL is stable in saved templates.
  */
-export function GrapesEditor({ initialMjml, onChange }: GrapesEditorProps) {
+export function GrapesEditor({ initialMjml, onChange, onRewriteText }: GrapesEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef(onChange);
+  const onRewriteRef = useRef(onRewriteText);
 
   useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    onRewriteRef.current = onRewriteText;
+  }, [onChange, onRewriteText]);
 
   useEffect(() => {
     let editor: import("grapesjs").Editor | undefined;
@@ -85,6 +101,55 @@ export function GrapesEditor({ initialMjml, onChange }: GrapesEditorProps) {
       } catch {
         // Non-fatal.
       }
+
+      // Blocks drawn from the default brand kit, with its values written in.
+      try {
+        const [kits, fonts] = await Promise.all([listBrandKits(), listBrandFonts()]);
+        const kit = kits.find((k) => k.isDefault) ?? kits[0];
+        if (kit && !disposed) {
+          const label = `Brand · ${kit.name}`.replace(/[<>&"]/g, "");
+          const category = { id: "brand", label, open: true };
+          for (const block of brandBlocks(kit, fonts)) {
+            editor.BlockManager.add(block.id, {
+              label: block.label,
+              category,
+              content: block.content,
+              media: block.media,
+            });
+          }
+        }
+      } catch {
+        // Non-fatal: the editor works without brand blocks.
+      }
+
+      // "Rewrite with AI" on the toolbar of a selected text block or button.
+      editor.Commands.add("mth-rewrite", {
+        run(ed) {
+          const component = ed.getSelected();
+          const kind = component && REWRITABLE[component.get("type") ?? ""];
+          const open = onRewriteRef.current;
+          if (!component || !kind || !open) return;
+
+          const html = component.getInnerHTML();
+          const text = (component.getEl()?.innerText ?? html.replace(/<[^>]+>/g, "")).trim();
+          if (!text) return;
+          open({
+            kind,
+            text,
+            hasMarkup: /<(?!br\b)[a-z]/i.test(html),
+            apply: (next) => component.components(escapeText(next).replace(/\n/g, "<br>")),
+          });
+        },
+      });
+      editor.on("component:selected", (component: import("grapesjs").Component) => {
+        if (!onRewriteRef.current || !REWRITABLE[component.get("type") ?? ""]) return;
+        const toolbar = component.get("toolbar") ?? [];
+        if (toolbar.some((item: { command?: unknown }) => item.command === "mth-rewrite")) return;
+        component.set("toolbar", [
+          { label: SPARKLE_ICON, command: "mth-rewrite", attributes: { title: "Rewrite with AI" } },
+          ...toolbar,
+        ]);
+      });
 
       editor.setComponents(initialMjml);
 

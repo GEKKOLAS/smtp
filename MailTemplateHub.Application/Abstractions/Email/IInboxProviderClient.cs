@@ -47,6 +47,16 @@ public interface IInboxProviderClient
 
     Task<InboxMessageDetail> GetMessageAsync(
         ConnectedAccountContext account, string messageId, CancellationToken ct);
+
+    /// <summary>
+    /// Ids of recent delivery-status notifications (bounces) in the inbox. The
+    /// search differs per provider, so it lives here rather than in the caller.
+    /// </summary>
+    Task<IReadOnlyList<string>> FindDeliveryNotificationsAsync(
+        ConnectedAccountContext account, int max, CancellationToken ct);
+
+    /// <summary>The whole message as RFC 5322 bytes, for parsing MIME reports.</summary>
+    Task<byte[]> GetRawMessageAsync(ConnectedAccountContext account, string messageId, CancellationToken ct);
 }
 
 public interface IInboxProviderClientFactory

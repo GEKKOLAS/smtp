@@ -93,4 +93,33 @@ public class HtmlSanitizerTests
         Assert.Contains("linear-gradient", clean);
         Assert.Contains("gradient-hero", clean);
     }
+
+    [Fact]
+    public void Keeps_borders_and_rounded_corners_after_shorthand_expansion()
+    {
+        // The CSS parser expands `border` and `border-radius` into longhands; this is
+        // how mj-button renders, so losing them made every brand button square.
+        var html = """<a href="https://x.test" style="border:2px solid #C2410C;border-radius:20px;background:transparent">CTA</a>""";
+
+        var clean = _sanitizer.Sanitize(html);
+
+        Assert.Matches(@"radius:\s*20px", clean);
+        Assert.Matches(@"2px", clean);
+        Assert.Matches(@"solid", clean);
+    }
+
+    [Fact]
+    public void Keeps_background_placement_for_hero_images()
+    {
+        // Longhands only: the parser rejects the `background` shorthand with a
+        // `/ size` part outright, which is why MJML heroes also carry the
+        // table `background` attribute (see the test above).
+        var html = """<table><tr><td style="background-image:url('https://example.com/hero.jpg');background-position:center top;background-size:cover;background-repeat:no-repeat">Hero</td></tr></table>""";
+
+        var clean = _sanitizer.Sanitize(html);
+
+        Assert.Contains("https://example.com/hero.jpg", clean);
+        Assert.Contains("cover", clean);
+        Assert.Contains("no-repeat", clean);
+    }
 }

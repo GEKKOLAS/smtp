@@ -13,6 +13,8 @@ public sealed class EmailSendRecipientConfiguration : IEntityTypeConfiguration<E
         builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(r => r.VariableOverrides).HasColumnType("jsonb").IsRequired();
         builder.Property(r => r.FailureCode).HasMaxLength(50);
+        builder.Property(r => r.BounceCode).HasMaxLength(16);
+        builder.Property(r => r.BounceReason).HasMaxLength(300);
 
         builder.HasIndex(r => new { r.SendJobId, r.Status });
         builder.HasIndex(r => r.EmailAddress);

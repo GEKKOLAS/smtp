@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { BrandKitSelect, useBrandKitChoice } from "@/components/brand/brand-kit-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -55,6 +56,7 @@ export function NewTemplateDialog() {
   const [advancedModel, setAdvancedModel] = useState(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const brand = useBrandKitChoice();
 
   const assetPicker = useQuery({
     queryKey: ["assets", "picker", "image"],
@@ -67,7 +69,8 @@ export function NewTemplateDialog() {
       if (mode === "ai") {
         const g = await generateTemplate({
           prompt,
-          brandColor,
+          brandColor: brand.kitId ? undefined : brandColor,
+          brandKitId: brand.kitId || undefined,
           assetIds: selectedAssetIds,
           videoUrl: videoUrl.trim() || undefined,
           useAdvancedModel: advancedModel,
@@ -177,16 +180,25 @@ export function NewTemplateDialog() {
               </div>
 
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="ai-color" className="text-xs">Brand color</Label>
-                  <input
-                    id="ai-color"
-                    type="color"
-                    value={brandColor}
-                    onChange={(e) => setBrandColor(e.target.value)}
-                    className="h-7 w-10 rounded border"
-                  />
-                </div>
+                <BrandKitSelect
+                  id="ai-brand-kit"
+                  kits={brand.kits}
+                  value={brand.kitId}
+                  onChange={brand.setKitId}
+                  noneLabel="None: pick a color"
+                />
+                {!brand.kitId && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="ai-color" className="text-xs">Brand color</Label>
+                    <input
+                      id="ai-color"
+                      type="color"
+                      value={brandColor}
+                      onChange={(e) => setBrandColor(e.target.value)}
+                      className="h-7 w-10 rounded border"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">

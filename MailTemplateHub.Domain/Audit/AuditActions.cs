@@ -41,4 +41,9 @@ public static class AuditActions
 
     public const string ApiKeyCreated = "api_key.created";
     public const string ApiKeyRevoked = "api_key.revoked";
+
+    public const string BrandKitCreated = "brand_kit.created";
+    public const string BrandKitUpdated = "brand_kit.updated";
+    public const string BrandKitDeleted = "brand_kit.deleted";
+    public const string BrandKitDefaultChanged = "brand_kit.default_changed";
 }

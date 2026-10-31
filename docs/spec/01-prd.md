@@ -67,7 +67,8 @@ column addition (`OrganizationId`), not a redesign.
 ## 5. Non-goals (explicit)
 
 - **No mass-marketing automation**: no drip campaigns, no audience segmentation, no
-  open/click tracking pixels in v1.
+  open-tracking pixels. (Amended by [14-outreach-studio.md](14-outreach-studio.md): click
+  tracking is allowed, opt-in per send.)
 - **No spam tooling**: hard cap on recipients per send job (default 50, configurable);
   no list rental/import of purchased lists; provider rate limits respected, never bypassed.
 - **No inbox reading**: we request send-only scopes. No scraping contacts from the inbox,

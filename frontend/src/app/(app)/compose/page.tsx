@@ -1,7 +1,7 @@
 "use client";
 
 import { listAccounts } from "@/lib/api/accounts";
-import { createSend, type RecipientInput } from "@/lib/api/sends";
+import { createSend, getTrackingStatus, type RecipientInput } from "@/lib/api/sends";
 import { getTemplate, listTemplates } from "@/lib/api/templates";
 import { ApiError } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/query-keys";
@@ -36,8 +36,12 @@ function ComposeInner() {
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [schedule, setSchedule] = useState(false);
   const [scheduledAt, setScheduledAt] = useState("");
+  const [trackClicks, setTrackClicks] = useState(false);
+  const [utmCampaign, setUtmCampaign] = useState("");
 
   const accounts = useQuery({ queryKey: queryKeys.accounts, queryFn: listAccounts });
+  const tracking = useQuery({ queryKey: ["tracking-status"], queryFn: getTrackingStatus, staleTime: Infinity });
+  const canTrack = tracking.data === true;
   const templates = useQuery({
     queryKey: queryKeys.templates(),
     queryFn: () => listTemplates({ pageSize: 100 }),
@@ -70,6 +74,8 @@ function ComposeInner() {
         recipients,
         variables,
         scheduledAt: schedule && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+        trackClicks: canTrack && trackClicks,
+        utmCampaign: utmCampaign.trim() || null,
       }),
     onSuccess: (job) => {
       toast.success(schedule ? "Send scheduled" : "Send queued");
@@ -179,6 +185,42 @@ function ComposeInner() {
               <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
             )}
           </div>
+
+          <fieldset className="space-y-3 rounded-xl border-2 border-dashed p-3.5 dark:border">
+            <legend className="px-1 font-mono text-[11px] font-bold tracking-[0.06em] uppercase dark:font-sans dark:font-medium dark:text-muted-foreground">
+              Measure
+            </legend>
+            <label className={`flex items-start gap-2 text-sm ${canTrack ? "" : "opacity-60"}`}>
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={canTrack && trackClicks}
+                disabled={!canTrack}
+                onChange={(e) => setTrackClicks(e.target.checked)}
+              />
+              <span>
+                Track clicks
+                <span className="block text-xs text-muted-foreground">
+                  {canTrack
+                    ? "Links go through a short redirect so you can see who clicked. Unsubscribe links are never tracked."
+                    : "Needs the app on a public address recipients can reach. Set Tracking:PublicBaseUrl when you deploy."}
+                </span>
+              </span>
+            </label>
+            <div className="space-y-1.5">
+              <Label htmlFor="utm-campaign" className="text-xs">UTM campaign (optional)</Label>
+              <Input
+                id="utm-campaign"
+                value={utmCampaign}
+                maxLength={100}
+                placeholder="spring-launch"
+                onChange={(e) => setUtmCampaign(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Tags links with utm_source, utm_medium and utm_campaign, so your site&apos;s analytics shows what this email brought in.
+              </p>
+            </div>
+          </fieldset>
 
           <Button onClick={() => send.mutate()} disabled={!canSend || send.isPending} className="w-full">
             {send.isPending ? "Sending…" : schedule ? "Schedule send" : "Send now"}

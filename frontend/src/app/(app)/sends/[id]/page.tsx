@@ -1,5 +1,6 @@
 "use client";
 
+import { formatRate, getSendAnalytics } from "@/lib/api/analytics";
 import { cancelSend, getSend, retrySend } from "@/lib/api/sends";
 import { formatDate } from "@/lib/format";
 import { queryKeys } from "@/lib/query/query-keys";
@@ -23,6 +24,13 @@ export default function SendDetailPage() {
     refetchInterval: (query) =>
       query.state.data && isActiveStatus(query.state.data.job.status) ? 3000 : false,
   });
+
+  const analytics = useQuery({
+    queryKey: queryKeys.sendAnalytics(id),
+    queryFn: () => getSendAnalytics(id),
+    enabled: data !== undefined && !data.job.isTest && !isActiveStatus(data.job.status),
+  });
+  const clicked = new Set(analytics.data?.recipients.filter((r) => r.clicked).map((r) => r.recipientId));
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.send(id) });
 
@@ -81,6 +89,52 @@ export default function SendDetailPage() {
         </div>
       </header>
 
+      {analytics.data && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Results</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <dl className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <dt className="text-xs text-muted-foreground">Accepted</dt>
+                <dd className="font-mono text-lg font-semibold tabular-nums">{analytics.data.totals.accepted}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Bounced</dt>
+                <dd className="font-mono text-lg font-semibold tabular-nums">{analytics.data.totals.bounced}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Click rate</dt>
+                <dd className="font-mono text-lg font-semibold tabular-nums">
+                  {analytics.data.trackClicks ? formatRate(analytics.data.totals.clickRate) : "Not tracked"}
+                </dd>
+              </div>
+            </dl>
+            {analytics.data.utmCampaign && (
+              <p className="text-xs text-muted-foreground">
+                UTM campaign: <span className="font-mono">{analytics.data.utmCampaign}</span>
+              </p>
+            )}
+            {analytics.data.links.length > 0 && (
+              <ul className="space-y-1.5 border-t-2 pt-3 text-sm dark:border-t">
+                {analytics.data.links.map((link) => (
+                  <li key={link.position} className="flex items-baseline gap-3">
+                    <span className="min-w-0 flex-1 truncate" title={link.url}>
+                      {link.url.replace(/^https?:\/\//, "")}
+                    </span>
+                    <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
+                      {link.uniqueClickers} people · {link.clicks} clicks
+                      {link.scannerClicks > 0 && ` · ${link.scannerClicks} scanner`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="gap-0 pb-0">
         <CardHeader className="pb-3"><CardTitle className="text-base">Recipients · {recipients.length}</CardTitle></CardHeader>
         <CardContent className="p-0">
@@ -90,13 +144,32 @@ export default function SendDetailPage() {
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{r.email}</p>
                   {r.failureMessage && <p className="text-xs text-destructive">{r.failureMessage}</p>}
+                  {r.status === "bounced" && (
+                    <p className="text-xs text-warning">
+                      Bounced{r.bounceCode && ` (${r.bounceCode})`}
+                      {r.bounceReason && `: ${r.bounceReason}`}
+                    </p>
+                  )}
                   {r.providerMessageId && (
                     <p className="truncate font-mono text-[11px] text-muted-foreground">id: {r.providerMessageId}</p>
                   )}
                 </div>
-                <Badge variant={r.status === "sent" ? "success" : r.status === "failed" ? "destructive" : "secondary"}>
-                  {r.status}
-                </Badge>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {clicked.has(r.id) && <Badge variant="info">Clicked</Badge>}
+                  <Badge
+                    variant={
+                      r.status === "sent"
+                        ? "success"
+                        : r.status === "failed"
+                          ? "destructive"
+                          : r.status === "bounced"
+                            ? "warning"
+                            : "secondary"
+                    }
+                  >
+                    {r.status}
+                  </Badge>
+                </div>
               </li>
             ))}
           </ul>

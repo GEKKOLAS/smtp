@@ -31,15 +31,7 @@ internal sealed class GmailInboxClient(HttpClient httpClient, IOptions<ProviderS
 
         using var doc = await GetJsonAsync(url, account.AccessToken, ct);
         var root = doc.RootElement;
-
-        var ids = new List<string>();
-        if (root.TryGetProperty("messages", out var messages) && messages.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var message in messages.EnumerateArray())
-            {
-                if (message.TryGetProperty("id", out var id) && id.GetString() is { } value) ids.Add(value);
-            }
-        }
+        var ids = ReadIds(root);
 
         var summaries = new InboxMessageSummary?[ids.Count];
         using var throttle = new SemaphoreSlim(MetadataFetchConcurrency);
@@ -65,6 +57,42 @@ internal sealed class GmailInboxClient(HttpClient httpClient, IOptions<ProviderS
 
         var nextToken = root.TryGetProperty("nextPageToken", out var next) ? next.GetString() : null;
         return new InboxPage([.. summaries.Where(s => s is not null).Cast<InboxMessageSummary>()], nextToken);
+    }
+
+    public async Task<IReadOnlyList<string>> FindDeliveryNotificationsAsync(
+        ConnectedAccountContext account, int max, CancellationToken ct)
+    {
+        // Gmail's own bounces come from mailer-daemon; other servers' from postmaster.
+        var query = Uri.EscapeDataString("from:(mailer-daemon OR postmaster) newer_than:3d");
+        using var doc = await GetJsonAsync($"{_messagesUrl}?labelIds=INBOX&maxResults={max}&q={query}",
+            account.AccessToken, ct);
+        return ReadIds(doc.RootElement);
+    }
+
+    public async Task<byte[]> GetRawMessageAsync(ConnectedAccountContext account, string messageId, CancellationToken ct)
+    {
+        using var doc = await GetJsonAsync($"{_messagesUrl}/{Uri.EscapeDataString(messageId)}?format=raw",
+            account.AccessToken, ct);
+        if (!doc.RootElement.TryGetProperty("raw", out var raw) || raw.GetString() is not { } encoded)
+        {
+            throw new ProviderSendException(ProviderErrorKind.PermanentOther, "The message was not found.");
+        }
+        var padded = encoded.Replace('-', '+').Replace('_', '/');
+        padded += (padded.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
+        return Convert.FromBase64String(padded);
+    }
+
+    private static List<string> ReadIds(JsonElement root)
+    {
+        var ids = new List<string>();
+        if (root.TryGetProperty("messages", out var messages) && messages.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var message in messages.EnumerateArray())
+            {
+                if (message.TryGetProperty("id", out var id) && id.GetString() is { } value) ids.Add(value);
+            }
+        }
+        return ids;
     }
 
     public async Task<InboxMessageDetail> GetMessageAsync(

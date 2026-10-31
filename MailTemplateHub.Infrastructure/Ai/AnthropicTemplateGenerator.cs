@@ -321,8 +321,14 @@ internal sealed class AnthropicTemplateGenerator(
         {
             lines.Add($"Create a beautiful, attention-grabbing marketing email for: {request.Prompt}");
         }
-        if (!string.IsNullOrWhiteSpace(request.BrandColor))
+        if (request.Brand is { } brand)
+        {
+            AddBrandKit(lines, brand, hasHeaderLogo: !string.IsNullOrWhiteSpace(request.HeaderLogoUrl));
+        }
+        else if (!string.IsNullOrWhiteSpace(request.BrandColor))
+        {
             lines.Add($"Brand color (build a full palette around this, don't just echo it back): {request.BrandColor}");
+        }
         if (!string.IsNullOrWhiteSpace(request.Tone)) lines.Add($"Tone: {request.Tone}");
         if (!string.IsNullOrWhiteSpace(request.BackgroundImageUrl))
             lines.Add($"Background image (use in the hero/section-background role only): {request.BackgroundImageUrl}");
@@ -342,6 +348,25 @@ internal sealed class AnthropicTemplateGenerator(
         if (request.DesiredVariables.Count > 0)
             lines.Add("Include these variables: " + string.Join(", ", request.DesiredVariables));
         return string.Join('\n', lines);
+    }
+
+    // The kit is the user's real brand, so its values are rules, not inspiration:
+    // the model may add tints of these colors for depth but must not swap them.
+    private static void AddBrandKit(List<string> lines, AiBrandKit brand, bool hasHeaderLogo)
+    {
+        lines.Add($"BRAND KIT \"{brand.Name}\" — use these exact values; they replace any palette you would invent:");
+        lines.Add($"- Primary {brand.Primary} (buttons, key highlights); secondary {brand.Secondary} (accents, badges).");
+        lines.Add($"- Email background {brand.Background}; content/card surface {brand.Surface}.");
+        lines.Add($"- Body text {brand.Text}; muted text {brand.Muted} (footer, captions); links {brand.Link}.");
+        lines.Add($"- Headings font-family: {brand.HeadingFontStack}. Body font-family: {brand.BodyFontStack}. Use these stacks verbatim, no web-font imports.");
+        lines.Add(brand.ButtonStyle == "outline"
+            ? $"- Buttons: outline style (transparent background, 2px {brand.Primary} border, {brand.Primary} text), border-radius {brand.ButtonRadius}px."
+            : $"- Buttons: filled with {brand.Primary}, border-radius {brand.ButtonRadius}px, text color with strong contrast on it.");
+        lines.Add($"- Cards and rounded sections: border-radius {brand.CardRadius}px.");
+        if (brand.LogoUrl is not null && !hasHeaderLogo)
+            lines.Add($"- Brand logo (small, at the very top of the email only): {brand.LogoUrl}");
+        if (!string.IsNullOrWhiteSpace(brand.Voice))
+            lines.Add($"- Write all copy in this brand voice: {brand.Voice}");
     }
 
     private static AiGeneratedTemplate ParseGenerated(string text)

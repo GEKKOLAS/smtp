@@ -73,6 +73,8 @@ public sealed partial class TemplateVersionFactory(
             EditorKind = editorKind,
             CreatedByUserId = currentUser.UserId,
             TemplateAssets = templateAssets,
+            // Versions are immutable (no IHasTimestamps), so nothing stamps them on save.
+            CreatedAt = clock.UtcNow,
         };
     }
 

@@ -11,7 +11,10 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
+  const date = new Date(iso);
+  // Template versions saved before the timestamp fix carry 0001-01-01.
+  if (Number.isNaN(date.getTime()) || date.getUTCFullYear() < 1970) return "date unknown";
+  return date.toLocaleDateString(undefined, { dateStyle: "medium" });
 }
 
 /** Time of day for today's dates, otherwise a short "Oct 28" — the usual mail-list format. */

@@ -56,6 +56,22 @@ internal sealed class GanssHtmlSanitizer : Application.Abstractions.Rendering.IH
                      "padding-left", "padding-right", "border", "border-top", "border-bottom",
                      "border-left", "border-right", "border-radius", "border-collapse", "border-spacing",
                      "display", "mso-table-lspace", "mso-table-rspace",
+                     // The sanitizer's CSS parser expands shorthands into longhands before
+                     // checking this list, so the longhands must be allowed too, or every
+                     // border, rounded corner and hero background placement is dropped.
+                     "border-width", "border-style", "border-color",
+                     "border-top-width", "border-top-style", "border-top-color",
+                     "border-right-width", "border-right-style", "border-right-color",
+                     "border-bottom-width", "border-bottom-style", "border-bottom-color",
+                     "border-left-width", "border-left-style", "border-left-color",
+                     "border-top-left-radius", "border-top-right-radius",
+                     "border-bottom-right-radius", "border-bottom-left-radius",
+                     "background-position", "background-size", "background-repeat",
+                     "background-position-x", "background-position-y",
+                     "background-repeat-x", "background-repeat-y",
+                     "background-origin", "background-clip", "background-attachment",
+                     "text-decoration-line", "text-decoration-style", "text-decoration-color",
+                     "font-variant",
                  })
         {
             _sanitizer.AllowedCssProperties.Add(prop);

@@ -4,6 +4,8 @@ using MailTemplateHub.Application.Abstractions.Ai;
 using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Abstractions.Storage;
 using MailTemplateHub.Application.Common;
+using MailTemplateHub.Application.Features.BrandKits;
+using MailTemplateHub.Domain.Entities;
 using MailTemplateHub.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -22,7 +24,8 @@ public sealed record GenerateTemplateCommand(
     string? CurrentHtml = null,
     Guid? BackgroundImageAssetId = null,
     Guid? HeaderLogoAssetId = null,
-    Guid? FooterLogoAssetId = null);
+    Guid? FooterLogoAssetId = null,
+    Guid? BrandKitId = null);
 
 public sealed record GeneratedVariableDto(string Name, string Type, string Sample);
 
@@ -47,7 +50,8 @@ public sealed partial class GenerateTemplateHandler(
     IAppDbContext db,
     ICurrentUser currentUser,
     IObjectStorage storage,
-    IOptions<StorageOptions> storageOptions)
+    IOptions<StorageOptions> storageOptions,
+    BrandKitsHandler brandKits)
 {
     public async Task<GeneratedTemplateDto> HandleAsync(GenerateTemplateCommand command, CancellationToken ct)
     {
@@ -61,6 +65,7 @@ public sealed partial class GenerateTemplateHandler(
         var assetUrls = await ResolveAssetUrlsAsync(command.AssetIds.Concat(roleAssetIds).Distinct().ToList(), ct);
         var videoUrl = string.IsNullOrWhiteSpace(command.VideoUrl) ? null : command.VideoUrl.Trim();
         var videoThumbnailUrl = videoUrl is null ? null : DeriveVideoThumbnailUrl(videoUrl);
+        var brand = command.BrandKitId is { } kitId ? ToAiBrand(await brandKits.FindForUseAsync(kitId, ct)) : null;
 
         var generated = await generator.GenerateAsync(
             new AiTemplateRequest(command.Prompt, command.BrandColor, command.Tone,
@@ -69,7 +74,8 @@ public sealed partial class GenerateTemplateHandler(
                 command.UseAdvancedModel, command.CurrentMjml, command.CurrentHtml,
                 command.BackgroundImageAssetId is { } bgId ? assetUrls.GetValueOrDefault(bgId) : null,
                 command.HeaderLogoAssetId is { } hlId ? assetUrls.GetValueOrDefault(hlId) : null,
-                command.FooterLogoAssetId is { } flId ? assetUrls.GetValueOrDefault(flId) : null),
+                command.FooterLogoAssetId is { } flId ? assetUrls.GetValueOrDefault(flId) : null,
+                brand),
             ct);
 
         var variables = generated.Variables
@@ -139,6 +145,15 @@ public sealed partial class GenerateTemplateHandler(
         }
         return map;
     }
+
+    private static AiBrandKit? ToAiBrand(BrandKit? kit) => kit is null ? null : new AiBrandKit(
+        kit.Name,
+        kit.Colors.Primary, kit.Colors.Secondary, kit.Colors.Background, kit.Colors.Surface,
+        kit.Colors.Text, kit.Colors.Muted, kit.Colors.Link,
+        (BrandFonts.Find(kit.HeadingFont) ?? BrandFonts.All[0]).Stack,
+        (BrandFonts.Find(kit.BodyFont) ?? BrandFonts.All[0]).Stack,
+        kit.LogoAsset?.PublicUrl,
+        kit.Button.Radius, kit.Button.Style, kit.Radius.Medium, kit.Voice);
 
     // Email clients don't render <video> or execute JavaScript, so a linked video
     // must ship as a static thumbnail with a play-button overlay. For YouTube URLs

@@ -46,6 +46,12 @@ public sealed class EmailSendJob : IHasTimestamps
 
     public bool IsReply => ReplyToProviderMessageId is not null;
 
+    /// <summary>Opt-in per send: links are rewritten through the redirect endpoint (spec 14 F4.1).</summary>
+    public bool TrackClicks { get; init; }
+
+    /// <summary>When set, links get utm_source/utm_medium/utm_campaign tags (tracked or not).</summary>
+    public string? UtmCampaign { get; init; }
+
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 

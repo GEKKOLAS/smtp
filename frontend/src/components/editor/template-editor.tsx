@@ -6,7 +6,9 @@ import { useSession } from "@/lib/hooks/use-session";
 import { queryKeys } from "@/lib/query/query-keys";
 import type { EditorKind, Template, TemplateContentInput, TemplateVariable } from "@/lib/schemas/templates";
 import { applyPlaceholder, type PlaceholderRole } from "@/lib/mjml-placeholders";
+import { getAiCapabilities } from "@/lib/api/ai";
 import { AiEditDialog } from "@/components/editor/ai-edit-dialog";
+import { CopyRewriteDialog, type RewriteTarget } from "@/components/editor/copy-rewrite-dialog";
 import { EditorKindSwitcher } from "@/components/editor/editor-kind-switcher";
 import { ImagePlaceholdersPanel } from "@/components/editor/image-placeholders-panel";
 import { MjmlSourceEditor } from "@/components/editor/mjml-source-editor";
@@ -65,7 +67,14 @@ export function TemplateEditor({ template }: { template: Template }) {
   const [testOpen, setTestOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [kindOpen, setKindOpen] = useState(false);
+  const [rewrite, setRewrite] = useState<RewriteTarget | null>(null);
   const { data: user } = useSession();
+  const { data: aiCapabilities } = useQuery({
+    queryKey: ["ai", "capabilities"],
+    queryFn: getAiCapabilities,
+    staleTime: Infinity,
+  });
+  const canRewrite = aiCapabilities?.copyAssistant === true;
 
   const detected = useMemo(() => detectVariables(subject, preheader, source), [subject, preheader, source]);
 
@@ -334,7 +343,29 @@ export function TemplateEditor({ template }: { template: Template }) {
           setPreheader(value);
           markDirty();
         }}
+        onRewrite={
+          canRewrite
+            ? (field) =>
+                setRewrite({
+                  kind: field,
+                  text: field === "subject" ? subject : preheader,
+                  apply: (text) => {
+                    if (field === "subject") setSubject(text);
+                    else setPreheader(text);
+                    markDirty();
+                  },
+                })
+            : undefined
+        }
       />
+      {rewrite && (
+        <CopyRewriteDialog
+          key={`${rewrite.kind}:${rewrite.text}`}
+          target={rewrite}
+          context={rewrite.kind === "subject" ? undefined : `Email subject: ${subject}`}
+          onClose={() => setRewrite(null)}
+        />
+      )}
 
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
@@ -343,6 +374,7 @@ export function TemplateEditor({ template }: { template: Template }) {
               key={grapesKey}
               initialMjml={source}
               onChange={(mjml) => { setSource(mjml); markDirty(); }}
+              onRewriteText={canRewrite ? setRewrite : undefined}
             />
           )}
           {tab === "mjml" && (

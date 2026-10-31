@@ -10,12 +10,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
+  BarChart3,
   Image as ImageIcon,
   Inbox,
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
   History,
+  Palette,
   PenSquare,
   Plug,
   Settings,
@@ -33,6 +35,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/templates", label: "Templates", icon: LayoutTemplate },
       { href: "/assets", label: "Assets", icon: ImageIcon },
+      { href: "/brand", label: "Brand", icon: Palette },
       { href: "/compose", label: "Compose", icon: PenSquare },
     ],
   },
@@ -41,6 +44,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/inbox", label: "Inbox", icon: Inbox },
       { href: "/sends", label: "History", icon: History },
+      { href: "/analytics", label: "Analytics", icon: BarChart3 },
     ],
   },
   {

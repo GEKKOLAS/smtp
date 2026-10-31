@@ -25,6 +25,8 @@ sun/moon button; the choice is remembered. Screenshots use demo data.
 | Templates with live thumbnails, versioning, duplicate, archive      | Generate a template from a prompt, choosing a Standard or Advanced design model |
 | ![Sign in](docs/screenshots/login-light.png)                       | ![Send history](docs/screenshots/history-dark.png)                 |
 | Sign in                                                             | Every send with per-recipient delivery and status                   |
+| ![Brand kit](docs/screenshots/brand-light.png)                     | ![Analytics](docs/screenshots/analytics-dark.png)                  |
+| Brand kit: colors, fonts, logo, buttons and voice, with a live sample and design-token export | Analytics: accepted, bounce rate, click rate by people (not scanners), per day and per template (sample data) |
 
 ## Features
 
@@ -59,6 +61,19 @@ sun/moon button; the choice is remembered. Screenshots use demo data.
   support, dedupe, and per-user quota.
 - **Scheduled & tracked sending** — queue, schedule, or test-send to yourself; per-recipient
   status with retries, backed by Hangfire.
+- **Brand kits** — palette, heading/body fonts, logo, button style, radius/spacing tokens and a
+  tone of voice. The visual builder gets "Brand" blocks (header, hero, card, button, footer)
+  with the kit's values written in, AI generation follows the kit exactly, and every kit exports
+  as design tokens (JSON or CSS custom properties).
+- **AI copy variations** — rewrite a subject, preheader, text block or button label in a
+  promotional, professional, technical or follow-up tone, in your brand's voice. Suggestions
+  that drop or invent a `{{variable}}` are thrown away server-side, and the model is told never
+  to add facts you didn't write.
+- **Honest analytics** — opt-in click tracking per send (links go through a short redirect;
+  unsubscribe links never do), UTM tagging for conversions in your own site analytics, and
+  bounces read from delivery reports in your mailbox. Clicks from link scanners (Safe Links,
+  Proofpoint, Mimecast…) are labeled and left out; there is no open rate, because Apple Mail and
+  Gmail's image proxy make it noise. See [docs/spec/14-outreach-studio.md](docs/spec/14-outreach-studio.md).
 - **Activity log** — an auditable record of security-relevant events per account.
 - **Automation-friendly** — a scoped API-key auth scheme for scripting sends (see
   [docs/integrations/n8n-whatsapp.md](docs/integrations/n8n-whatsapp.md) for the n8n/WhatsApp
@@ -69,7 +84,7 @@ sun/moon button; the choice is remembered. Screenshots use demo data.
 ## Stack
 
 ASP.NET Core (.NET 10) · EF Core + PostgreSQL · Hangfire · MimeKit · Mjml.Net ·
-MinIO/S3 · Anthropic Claude (AI template generation) · Next.js App Router (TypeScript) ·
+MinIO/S3 · Anthropic Claude (AI template generation and copy rewrites) · Next.js App Router (TypeScript) ·
 Tailwind + shadcn/ui · TanStack Query · GrapesJS · CodeMirror
 
 ## Quickstart (local dev)
@@ -94,6 +109,13 @@ AI template generation needs an Anthropic API key: set `Ai:ApiKey` (or `Ai__ApiK
 secrets/environment. Without a key, template generation falls back to a deterministic scaffold
 so the rest of the app still works. `Ai:Model` / `Ai:AdvancedModel` control which model each
 design tier uses (defaults: `claude-sonnet-5` / `claude-opus-4-8`).
+
+The AI copy assistant uses the same key; without one it is hidden.
+
+Click tracking needs a public address recipients can reach: set `Tracking:PublicBaseUrl`
+(e.g. `https://mail.example.com`) once deployed. Until then the "Track clicks" option is shown
+disabled with the reason; UTM tagging works either way. Bounce detection runs every 15 minutes
+for accounts that granted inbox read access.
 
 Real Gmail/Outlook sending needs OAuth apps registered with each provider (`OAuth:Google:*` /
 `OAuth:Microsoft:*`, via user secrets) with `Mail.Send`-equivalent scopes; without them, everything

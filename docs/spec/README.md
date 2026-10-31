@@ -34,6 +34,7 @@ PRD ──▶ User Stories ──▶ Architecture + Security ──▶ Contracts
 | 11 | [11-testing.md](11-testing.md) | K | Unit / integration / E2E strategy, tooling |
 | 12 | [12-implementation-plan.md](12-implementation-plan.md) | L | Milestones, phases, task breakdown, build plan |
 | 13 | [13-code-skeletons.md](13-code-skeletons.md) | N | Key backend & frontend module skeletons |
+| 14 | [14-outreach-studio.md](14-outreach-studio.md) | — | Post-MVP: Brand Kit, AI copy assistant, version compare, campaign analytics |
 
 ## Locked technology decisions
 

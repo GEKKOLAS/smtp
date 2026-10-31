@@ -11,6 +11,9 @@ public sealed class RateLimitingOptions
     public PolicyOptions Send { get; init; } = new() { PermitLimit = 30, WindowMinutes = 60 };
     public PolicyOptions Ai { get; init; } = new() { PermitLimit = 20, WindowMinutes = 60 };
 
+    /// <summary>Per IP on the anonymous click redirect; offices share an IP, so it is generous.</summary>
+    public PolicyOptions Tracking { get; init; } = new() { PermitLimit = 300, WindowMinutes = 1 };
+
     public sealed class PolicyOptions
     {
         public int PermitLimit { get; init; } = 10;

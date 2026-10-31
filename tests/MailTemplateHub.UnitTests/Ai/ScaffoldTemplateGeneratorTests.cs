@@ -44,6 +44,30 @@ public class ScaffoldTemplateGeneratorTests
     }
 
     [Fact]
+    public async Task Brand_kit_values_are_used_literally_and_still_compile()
+    {
+        var brand = new AiBrandKit("Acme", "#C2410C", "#00CEC9", "#FFF4E6", "#FFFFFE", "#17151F", "#6B6878", "#4B2FD6",
+            "'Space Grotesk', Arial, Helvetica, sans-serif", "Inter, Arial, Helvetica, sans-serif",
+            "https://cdn.example/acme-logo.png", ButtonRadius: 6, ButtonStyle: "outline", CardRadius: 12, Voice: null);
+        var request = Request(color: "#000000") with { Brand = brand };
+
+        var result = await _generator.GenerateAsync(request, CancellationToken.None);
+
+        // The kit wins over the loose brand color.
+        Assert.DoesNotContain("#000000", result.MjmlSource);
+        Assert.Contains("background-color=\"#FFF4E6\"", result.MjmlSource);
+        Assert.Contains("background-color=\"#FFFFFE\"", result.MjmlSource);
+        Assert.Contains("border=\"2px solid #C2410C\"", result.MjmlSource);
+        Assert.Contains("border-radius=\"6px\"", result.MjmlSource);
+        Assert.Contains("https://cdn.example/acme-logo.png", result.MjmlSource);
+
+        var compiled = new MjmlNetCompiler().Compile(result.MjmlSource);
+        Assert.True(compiled.Success, string.Join(",", compiled.Errors.Select(e => e.Message)));
+        Assert.Contains("Space Grotesk", compiled.Html);
+        Assert.Contains("Inter, Arial", compiled.Html);
+    }
+
+    [Fact]
     public async Task Declares_variables_with_samples()
     {
         var result = await _generator.GenerateAsync(Request(), CancellationToken.None);

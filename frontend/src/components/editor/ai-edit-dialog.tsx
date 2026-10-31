@@ -3,6 +3,7 @@
 import { generateTemplate } from "@/lib/api/ai";
 import { listAssets } from "@/lib/api/assets";
 import { ApiError } from "@/lib/api/client";
+import { BrandKitSelect, useBrandKitChoice } from "@/components/brand/brand-kit-select";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,6 +89,8 @@ export function AiEditDialog({
   const [headerLogoAssetId, setHeaderLogoAssetId] = useState<string | null>(null);
   const [footerLogoAssetId, setFooterLogoAssetId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Edits restyle nothing unless asked: no kit until the user picks one.
+  const brand = useBrandKitChoice({ preferNone: true });
 
   const assetPicker = useQuery({
     queryKey: ["assets", "picker", "image"],
@@ -104,6 +107,7 @@ export function AiEditDialog({
         backgroundImageAssetId: backgroundAssetId ?? undefined,
         headerLogoAssetId: headerLogoAssetId ?? undefined,
         footerLogoAssetId: footerLogoAssetId ?? undefined,
+        brandKitId: brand.kitId || undefined,
         ...(isHtml ? { currentHtml: currentSource } : { currentMjml: currentSource }),
       }),
     onSuccess: (g) => {
@@ -167,6 +171,21 @@ export function AiEditDialog({
               className="w-full rounded-md border bg-background px-3 py-2 text-sm"
               autoFocus
             />
+          </div>
+
+          <div className="space-y-1">
+            <BrandKitSelect
+              id="ai-edit-brand-kit"
+              kits={brand.kits}
+              value={brand.kitId}
+              onChange={brand.setKitId}
+              noneLabel="Keep current styling"
+            />
+            {brand.kitId && (
+              <p className="text-xs text-muted-foreground">
+                The AI restyles the template with this kit&apos;s colors, fonts, buttons and voice.
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 rounded-lg border border-dashed p-3">

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using MailTemplateHub.Application.Abstractions;
@@ -8,6 +9,7 @@ using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Abstractions.Storage;
 using MailTemplateHub.Application.Common;
 using MailTemplateHub.Application.Features.Templates;
+using MailTemplateHub.Application.Features.Tracking;
 using MailTemplateHub.Domain.Audit;
 using MailTemplateHub.Domain.Entities;
 using MailTemplateHub.Domain.Enums;
@@ -32,6 +34,7 @@ internal sealed class EmailSendService(
     IAuditWriter audit,
     IOptions<StorageOptions> storageOptions,
     IOptions<SendLimitsOptions> limitsOptions,
+    IOptions<TrackingOptions> trackingOptions,
     IClock clock,
     ILogger<EmailSendService> logger) : IEmailSendService
 {
@@ -70,7 +73,11 @@ internal sealed class EmailSendService(
                 {
                     assets ??= await LoadAssetsAsync(job, ct);
                     var accountContext = await tokenRefresh.GetValidContextAsync(job.ConnectedEmailAccountId, ct);
-                    var email = BuildEmail(job, recipient, content, jobVars, assets, accountContext);
+                    // A retry reuses the links minted on an earlier attempt.
+                    var links = job.TrackClicks
+                        ? await db.TrackedLinks.Where(l => l.RecipientId == recipient.Id).ToListAsync(ct)
+                        : [];
+                    var email = BuildEmail(job, recipient, content, jobVars, assets, accountContext, links);
 
                     var result = await providerClient.SendAsync(accountContext, email, ct);
                     recipient.MarkSent(result.ProviderMessageId, result.ThreadId, clock.UtcNow);
@@ -148,12 +155,14 @@ internal sealed class EmailSendService(
 
     private OutgoingEmail BuildEmail(
         EmailSendJob job, EmailSendRecipient recipient, TemplateContent content,
-        IReadOnlyDictionary<string, string?> jobVars, SendAssets assets, ConnectedAccountContext account)
+        IReadOnlyDictionary<string, string?> jobVars, SendAssets assets, ConnectedAccountContext account,
+        List<TrackedLink> links)
     {
         var vars = new Dictionary<string, string?>(jobVars, StringComparer.Ordinal);
         foreach (var (key, value) in Deserialize(recipient.VariableOverrides)) vars[key] = value;
 
         var rendered = renderer.Render(new RenderRequest(content, vars, Strict: false, assets.Urls));
+        var (html, text) = RewriteLinks(job, recipient, rendered.Html, rendered.Text, links);
 
         var headers = new Dictionary<string, string> { ["X-MailTemplateHub-Ref"] = recipient.Id.ToString() };
 
@@ -169,13 +178,52 @@ internal sealed class EmailSendService(
             new Application.Abstractions.Email.MailboxAddress(account.EmailAddress, null),
             [new Application.Abstractions.Email.MailboxAddress(recipient.EmailAddress, recipient.DisplayName)],
             job.SubjectSnapshot,
-            rendered.Html,
-            rendered.Text,
+            html,
+            text,
             assets.Inline,
             assets.Attachments,
             headers,
             job.ReplyToThreadId);
     }
+
+    /// <summary>UTM tags and tracked redirects for one recipient's copy (spec 14 F4.1).</summary>
+    private (string Html, string Text) RewriteLinks(
+        EmailSendJob job, EmailSendRecipient recipient, string html, string text, List<TrackedLink> links)
+    {
+        var tracking = trackingOptions.Value;
+        var track = job.TrackClicks && tracking.IsConfigured;
+        if (job.TrackClicks && !track)
+        {
+            logger.LogWarning("Send job {JobId} asked for click tracking, but Tracking:PublicBaseUrl is not set", job.Id);
+        }
+        if (!track && job.UtmCampaign is null) return (html, text);
+
+        var result = LinkRewriter.Rewrite(html, text, job.UtmCampaign, track
+            ? (target, position) =>
+            {
+                var link = links.FirstOrDefault(l => l.TargetUrl == target);
+                if (link is null)
+                {
+                    link = new TrackedLink
+                    {
+                        SendJobId = job.Id,
+                        RecipientId = recipient.Id,
+                        Token = NewToken(),
+                        TargetUrl = target,
+                        Position = position,
+                        CreatedAt = clock.UtcNow,
+                    };
+                    links.Add(link);
+                    db.TrackedLinks.Add(link);
+                }
+                return tracking.RedirectUrl(link.Token);
+            }
+            : null);
+        return (result.Html, result.Text);
+    }
+
+    private static string NewToken() =>
+        Convert.ToBase64String(RandomNumberGenerator.GetBytes(16)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 
     private async Task<SendAssets> LoadAssetsAsync(EmailSendJob job, CancellationToken ct)
     {

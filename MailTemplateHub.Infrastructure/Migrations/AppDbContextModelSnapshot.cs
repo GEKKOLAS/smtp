@@ -239,6 +239,73 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.ToTable("audit_logs", (string)null);
                 });
 
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.BrandKit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BodyFont")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("body_font");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("HeadingFont")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("heading_font");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<Guid?>("LogoAssetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("logo_asset_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Voice")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("voice");
+
+                    b.HasKey("Id")
+                        .HasName("pk_brand_kits");
+
+                    b.HasIndex("LogoAssetId")
+                        .HasDatabaseName("ix_brand_kits_logo_asset_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_brand_kits_user_id");
+
+                    b.HasIndex(new[] { "UserId" }, "ux_brand_kits_user_default")
+                        .IsUnique()
+                        .HasDatabaseName("ux_brand_kits_user_default")
+                        .HasFilter("is_default");
+
+                    b.ToTable("brand_kits", (string)null);
+                });
+
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.ConnectedEmailAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -545,6 +612,10 @@ namespace MailTemplateHub.Infrastructure.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("total_size_bytes");
 
+                    b.Property<bool>("TrackClicks")
+                        .HasColumnType("boolean")
+                        .HasColumnName("track_clicks");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -552,6 +623,11 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
+
+                    b.Property<string>("UtmCampaign")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("utm_campaign");
 
                     b.Property<JsonDocument>("VariableValues")
                         .IsRequired()
@@ -592,6 +668,20 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.Property<int>("AttemptCount")
                         .HasColumnType("integer")
                         .HasColumnName("attempt_count");
+
+                    b.Property<string>("BounceCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("bounce_code");
+
+                    b.Property<string>("BounceReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("bounce_reason");
+
+                    b.Property<DateTimeOffset?>("BouncedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("bounced_at");
 
                     b.Property<Guid?>("ContactId")
                         .HasColumnType("uuid")
@@ -801,6 +891,39 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.ToTable("email_template_versions", (string)null);
                 });
 
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.LinkClick", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Classification")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("classification");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("TrackedLinkId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tracked_link_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_link_clicks");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("ix_link_clicks_occurred_at");
+
+                    b.HasIndex("TrackedLinkId")
+                        .HasDatabaseName("ix_link_clicks_tracked_link_id");
+
+                    b.ToTable("link_clicks", (string)null);
+                });
+
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.OAuthState", b =>
                 {
                     b.Property<Guid>("Id")
@@ -957,6 +1080,40 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.ToTable("password_reset_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.ProcessedInboxNotice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ConnectedEmailAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("connected_email_account_id");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.Property<string>("ProviderMessageId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("provider_message_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_processed_inbox_notices");
+
+                    b.HasIndex("ProcessedAt")
+                        .HasDatabaseName("ix_processed_inbox_notices_processed_at");
+
+                    b.HasIndex("ConnectedEmailAccountId", "ProviderMessageId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_processed_inbox_notices_connected_email_account_id_provider");
+
+                    b.ToTable("processed_inbox_notices", (string)null);
+                });
+
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.TemplateAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -998,6 +1155,57 @@ namespace MailTemplateHub.Infrastructure.Migrations
                         .HasDatabaseName("ux_template_assets_unique");
 
                     b.ToTable("template_assets", (string)null);
+                });
+
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.TrackedLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recipient_id");
+
+                    b.Property<Guid>("SendJobId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("send_job_id");
+
+                    b.Property<string>("TargetUrl")
+                        .IsRequired()
+                        .HasMaxLength(4096)
+                        .HasColumnType("character varying(4096)")
+                        .HasColumnName("target_url");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("token");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tracked_links");
+
+                    b.HasIndex("RecipientId")
+                        .HasDatabaseName("ix_tracked_links_recipient_id");
+
+                    b.HasIndex("SendJobId")
+                        .HasDatabaseName("ix_tracked_links_send_job_id");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tracked_links_token");
+
+                    b.ToTable("tracked_links", (string)null);
                 });
 
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.User", b =>
@@ -1130,6 +1338,143 @@ namespace MailTemplateHub.Infrastructure.Migrations
                         .HasConstraintName("fk_audit_logs_users_user_id");
                 });
 
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.BrandKit", b =>
+                {
+                    b.HasOne("MailTemplateHub.Domain.Entities.Asset", "LogoAsset")
+                        .WithMany()
+                        .HasForeignKey("LogoAssetId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_brand_kits_assets_logo_asset_id");
+
+                    b.HasOne("MailTemplateHub.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_brand_kits_users_user_id");
+
+                    b.OwnsOne("MailTemplateHub.Domain.Entities.BrandButtonStyle", "Button", b1 =>
+                        {
+                            b1.Property<Guid>("BrandKitId");
+
+                            b1.Property<int>("Radius");
+
+                            b1.Property<string>("Style")
+                                .IsRequired();
+
+                            b1.HasKey("BrandKitId");
+
+                            b1.ToTable("brand_kits");
+
+                            b1
+                                .ToJson("button")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BrandKitId")
+                                .HasConstraintName("fk_brand_kits_brand_kits_id");
+                        });
+
+                    b.OwnsOne("MailTemplateHub.Domain.Entities.BrandColors", "Colors", b1 =>
+                        {
+                            b1.Property<Guid>("BrandKitId");
+
+                            b1.Property<string>("Background")
+                                .IsRequired();
+
+                            b1.Property<string>("Link")
+                                .IsRequired();
+
+                            b1.Property<string>("Muted")
+                                .IsRequired();
+
+                            b1.Property<string>("Primary")
+                                .IsRequired();
+
+                            b1.Property<string>("Secondary")
+                                .IsRequired();
+
+                            b1.Property<string>("Surface")
+                                .IsRequired();
+
+                            b1.Property<string>("Text")
+                                .IsRequired();
+
+                            b1.HasKey("BrandKitId");
+
+                            b1.ToTable("brand_kits");
+
+                            b1
+                                .ToJson("colors")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BrandKitId")
+                                .HasConstraintName("fk_brand_kits_brand_kits_id");
+                        });
+
+                    b.OwnsOne("MailTemplateHub.Domain.Entities.BrandScale", "Radius", b1 =>
+                        {
+                            b1.Property<Guid>("BrandKitId");
+
+                            b1.Property<int>("Large");
+
+                            b1.Property<int>("Medium");
+
+                            b1.Property<int>("Small");
+
+                            b1.HasKey("BrandKitId")
+                                .HasName("pk_brand_kits");
+
+                            b1.ToTable("brand_kits");
+
+                            b1
+                                .ToJson("radius")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BrandKitId")
+                                .HasConstraintName("fk_brand_kits_brand_kits_brand_kit_id");
+                        });
+
+                    b.OwnsOne("MailTemplateHub.Domain.Entities.BrandScale", "Spacing", b1 =>
+                        {
+                            b1.Property<Guid>("BrandKitId");
+
+                            b1.Property<int>("Large");
+
+                            b1.Property<int>("Medium");
+
+                            b1.Property<int>("Small");
+
+                            b1.HasKey("BrandKitId");
+
+                            b1.ToTable("brand_kits");
+
+                            b1
+                                .ToJson("spacing")
+                                .HasColumnType("jsonb");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BrandKitId")
+                                .HasConstraintName("fk_brand_kits_brand_kits_id");
+                        });
+
+                    b.Navigation("Button")
+                        .IsRequired();
+
+                    b.Navigation("Colors")
+                        .IsRequired();
+
+                    b.Navigation("LogoAsset");
+
+                    b.Navigation("Radius")
+                        .IsRequired();
+
+                    b.Navigation("Spacing")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.ConnectedEmailAccount", b =>
                 {
                     b.HasOne("MailTemplateHub.Domain.Entities.User", null)
@@ -1229,6 +1574,16 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.Navigation("Template");
                 });
 
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.LinkClick", b =>
+                {
+                    b.HasOne("MailTemplateHub.Domain.Entities.TrackedLink", null)
+                        .WithMany("Clicks")
+                        .HasForeignKey("TrackedLinkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_link_clicks_tracked_links_tracked_link_id");
+                });
+
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.OAuthState", b =>
                 {
                     b.HasOne("MailTemplateHub.Domain.Entities.User", null)
@@ -1263,6 +1618,16 @@ namespace MailTemplateHub.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.ProcessedInboxNotice", b =>
+                {
+                    b.HasOne("MailTemplateHub.Domain.Entities.ConnectedEmailAccount", null)
+                        .WithMany()
+                        .HasForeignKey("ConnectedEmailAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_processed_inbox_notices_connected_email_accounts_connected_");
+                });
+
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.TemplateAsset", b =>
                 {
                     b.HasOne("MailTemplateHub.Domain.Entities.Asset", "Asset")
@@ -1280,6 +1645,25 @@ namespace MailTemplateHub.Infrastructure.Migrations
                         .HasConstraintName("fk_template_assets_email_template_versions_template_version_id");
 
                     b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.TrackedLink", b =>
+                {
+                    b.HasOne("MailTemplateHub.Domain.Entities.EmailSendRecipient", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tracked_links_email_send_recipients_recipient_id");
+
+                    b.HasOne("MailTemplateHub.Domain.Entities.EmailSendJob", null)
+                        .WithMany()
+                        .HasForeignKey("SendJobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tracked_links_email_send_jobs_send_job_id");
+
+                    b.Navigation("Recipient");
                 });
 
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.UserSession", b =>
@@ -1314,6 +1698,11 @@ namespace MailTemplateHub.Infrastructure.Migrations
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.EmailTemplateVersion", b =>
                 {
                     b.Navigation("TemplateAssets");
+                });
+
+            modelBuilder.Entity("MailTemplateHub.Domain.Entities.TrackedLink", b =>
+                {
+                    b.Navigation("Clicks");
                 });
 
             modelBuilder.Entity("MailTemplateHub.Domain.Entities.User", b =>

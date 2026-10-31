@@ -25,6 +25,10 @@ public interface IAppDbContext
     DbSet<EmailSendRecipient> EmailSendRecipients { get; }
     DbSet<EmailSendAttachment> EmailSendAttachments { get; }
     DbSet<ApiKey> ApiKeys { get; }
+    DbSet<BrandKit> BrandKits { get; }
+    DbSet<TrackedLink> TrackedLinks { get; }
+    DbSet<LinkClick> LinkClicks { get; }
+    DbSet<ProcessedInboxNotice> ProcessedInboxNotices { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 

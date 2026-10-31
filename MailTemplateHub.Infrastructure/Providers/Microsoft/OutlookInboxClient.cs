@@ -67,6 +67,42 @@ internal sealed class OutlookInboxClient(HttpClient httpClient, IOptions<Provide
         return new InboxPage(items, next);
     }
 
+    public async Task<IReadOnlyList<string>> FindDeliveryNotificationsAsync(
+        ConnectedAccountContext account, int max, CancellationToken ct)
+    {
+        // Exchange titles its reports "Undeliverable:"; other servers send from postmaster or mailer-daemon.
+        var page = await ListInboxAsync(
+            account, null, "subject:Undeliverable OR from:postmaster OR from:mailer-daemon", max, ct);
+        return page.Items.Select(i => i.Id).ToList();
+    }
+
+    public async Task<byte[]> GetRawMessageAsync(ConnectedAccountContext account, string messageId, CancellationToken ct)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"{_messagesUrl}/{Uri.EscapeDataString(messageId)}/$value");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", account.AccessToken);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await httpClient.SendAsync(request, ct);
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ProviderSendException(ProviderErrorKind.Transient, "Outlook was unreachable.", inner: ex);
+        }
+
+        using (response)
+        {
+            if (response.IsSuccessStatusCode) return await response.Content.ReadAsByteArrayAsync(ct);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new ProviderSendException(ProviderErrorKind.PermanentOther, "The message was not found.");
+            }
+            var kind = GraphErrorMap.Classify((int)response.StatusCode, ExtractCode(await response.Content.ReadAsStringAsync(ct)));
+            throw new ProviderSendException(kind, InboxSafeMessage(kind), response.Headers.RetryAfter?.Delta);
+        }
+    }
+
     public async Task<InboxMessageDetail> GetMessageAsync(
         ConnectedAccountContext account, string messageId, CancellationToken ct)
     {

@@ -16,6 +16,7 @@ public sealed class CleanupJob(
     IAppDbContext db,
     IObjectStorage storage,
     IOptions<StorageOptions> storageOptions,
+    IOptions<TrackingOptions> trackingOptions,
     IClock clock,
     ILogger<CleanupJob> logger)
 {
@@ -39,6 +40,12 @@ public sealed class CleanupJob(
         await db.OAuthStates.Where(s => s.ExpiresAt < now).ExecuteDeleteAsync(ct);
         await db.PasswordResetTokens.Where(t => t.ExpiresAt < now || t.UsedAt != null).ExecuteDeleteAsync(ct);
         await db.UserSessions.Where(s => s.ExpiresAt < now).ExecuteDeleteAsync(ct);
+
+        // (b2) Click history past its retention window (spec 14 F4.2).
+        var clickCutoff = now.AddDays(-trackingOptions.Value.RetentionDays);
+        await db.LinkClicks.Where(c => c.OccurredAt < clickCutoff).ExecuteDeleteAsync(ct);
+        // The bounce scan looks back 3 days, so older receipts can never match again.
+        await db.ProcessedInboxNotices.Where(n => n.ProcessedAt < now.AddDays(-30)).ExecuteDeleteAsync(ct);
 
         // (c) Soft-deleted assets no longer referenced by any template version or send.
         var softDeleted = await db.Assets

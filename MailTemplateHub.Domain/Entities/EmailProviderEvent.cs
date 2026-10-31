@@ -30,5 +30,6 @@ public static class ProviderEventTypes
     public const string SendAttempt = "send_attempt";
     public const string SendSuccess = "send_success";
     public const string SendFailure = "send_failure";
+    public const string Bounce = "bounce";
     public const string Throttled = "throttled";
 }

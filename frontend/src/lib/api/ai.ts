@@ -26,11 +26,32 @@ export function generateTemplate(input: {
   backgroundImageAssetId?: string;
   headerLogoAssetId?: string;
   footerLogoAssetId?: string;
+  brandKitId?: string;
 }): Promise<GeneratedTemplate> {
   return api("/ai/templates/generate", { body: input, schema: generatedTemplateSchema });
 }
 
-const aiCapabilitiesSchema = z.object({ imageGeneration: z.boolean() });
+export type CopyKind = "subject" | "preheader" | "body" | "cta";
+export type CopyTone = "promotional" | "professional" | "technical" | "followUp";
+
+const copyVariationsSchema = z.object({
+  variations: z.array(z.object({ text: z.string(), note: z.string().nullable() })),
+});
+export type CopyVariation = z.infer<typeof copyVariationsSchema>["variations"][number];
+
+/** Tone-based rewrites; the server drops any that lose or invent a {{variable}}. */
+export function rewriteCopy(input: {
+  kind: CopyKind;
+  text: string;
+  tone: CopyTone;
+  count?: number;
+  brandKitId?: string;
+  context?: string;
+}): Promise<CopyVariation[]> {
+  return api("/ai/copy/variations", { body: input, schema: copyVariationsSchema }).then((r) => r.variations);
+}
+
+const aiCapabilitiesSchema = z.object({ imageGeneration: z.boolean(), copyAssistant: z.boolean() });
 export type AiCapabilities = z.infer<typeof aiCapabilitiesSchema>;
 
 export function getAiCapabilities(): Promise<AiCapabilities> {

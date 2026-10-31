@@ -1,4 +1,5 @@
 using FluentValidation;
+using MailTemplateHub.Application.Abstractions.Ai;
 using MailTemplateHub.Application.Abstractions.Rendering;
 using MailTemplateHub.Application.Common;
 using MailTemplateHub.Application.Features.Assets;
@@ -27,6 +28,7 @@ internal sealed class GlobalExceptionHandler(
             UnauthorizedAppException unauthorized => (StatusCodes.Status401Unauthorized, unauthorized.Message, unauthorized.Code),
             ConflictException conflict => (StatusCodes.Status409Conflict, conflict.Message, conflict.Code),
             ProviderUnavailableException provider => (StatusCodes.Status502BadGateway, provider.Message, provider.Code),
+            AiUnavailableException ai => (StatusCodes.Status503ServiceUnavailable, ai.Message, ai.Code),
             // All remaining AppException subtypes (asset/render/content validation) are 422.
             AppException app => (StatusCodes.Status422UnprocessableEntity, app.Message, app.Code),
             DomainException domain => (StatusCodes.Status400BadRequest, domain.Message, domain.Code),
@@ -34,7 +36,8 @@ internal sealed class GlobalExceptionHandler(
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", "internal_error"),
         };
 
-        if (status >= StatusCodes.Status500InternalServerError)
+        // A feature switched off by configuration is expected, not a fault.
+        if (status >= StatusCodes.Status500InternalServerError && exception is not AiUnavailableException)
         {
             logger.LogError(exception, "Unhandled exception for {Method} {Path}",
                 httpContext.Request.Method, httpContext.Request.Path);

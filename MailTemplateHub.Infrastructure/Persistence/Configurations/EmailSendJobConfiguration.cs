@@ -19,6 +19,7 @@ public sealed class EmailSendJobConfiguration : IEntityTypeConfiguration<EmailSe
         builder.Property(j => j.ReplyToInternetMessageId).HasMaxLength(1000);
         // A long thread's References chain has no useful upper bound; keep it text.
         builder.Property(j => j.ReplyToReferences);
+        builder.Property(j => j.UtmCampaign).HasMaxLength(100);
 
         builder.HasIndex(j => new { j.UserId, j.Status, j.CreatedAt });
         builder.HasIndex(j => j.ScheduledAt)

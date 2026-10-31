@@ -3,6 +3,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using MailTemplateHub.Application.Abstractions;
+using MailTemplateHub.Application.Abstractions.Ai;
 using MailTemplateHub.Application.Abstractions.Email;
 using MailTemplateHub.Application.Abstractions.Jobs;
 using Microsoft.AspNetCore.Hosting;
@@ -49,6 +50,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public StubOAuthHandler OAuth { get; } = new();
     public FakeEmailProviderClient Provider { get; } = new();
     public FakeInboxClient Inbox { get; } = new();
+    public FakeCopyWriter CopyWriter { get; } = new();
 
     // Build an explicit http URL; a bare host:port makes the S3 SDK assume https,
     // which fails against MinIO's plain-HTTP endpoint.
@@ -137,6 +139,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
                 // Run send jobs synchronously in-process; no Hangfire server.
                 ["Jobs:RunInProcess"] = "false",
+
+                // Click tracking on, with no scanner window: tests click right after sending.
+                ["Tracking:PublicBaseUrl"] = "https://track.test",
+                ["Tracking:ScannerWindowSeconds"] = "0",
             }));
 
         builder.ConfigureServices(services =>
@@ -160,6 +166,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddSingleton<IInboxProviderClientFactory>(new FakeInboxClientFactory(Inbox));
             services.RemoveAll<IBackgroundJobScheduler>();
             services.AddScoped<IBackgroundJobScheduler, SynchronousJobScheduler>();
+            services.RemoveAll<IAiCopyWriter>();
+            services.AddSingleton<IAiCopyWriter>(CopyWriter);
         });
     }
 }

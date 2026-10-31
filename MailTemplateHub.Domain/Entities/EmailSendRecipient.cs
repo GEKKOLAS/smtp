@@ -25,6 +25,11 @@ public sealed class EmailSendRecipient
     public string? FailureCode { get; set; }
     public string? FailureMessage { get; set; }
 
+    public DateTimeOffset? BouncedAt { get; set; }
+    /// <summary>The DSN status, e.g. 5.1.1.</summary>
+    public string? BounceCode { get; set; }
+    public string? BounceReason { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
@@ -38,6 +43,17 @@ public sealed class EmailSendRecipient
         AttemptCount++;
         FailureCode = null;
         FailureMessage = null;
+    }
+
+    /// <summary>A hard bounce for a message the provider had accepted. Only sent mail can bounce.</summary>
+    public bool MarkBounced(string code, string? reason, DateTimeOffset now)
+    {
+        if (Status != RecipientStatus.Sent) return false;
+        Status = RecipientStatus.Bounced;
+        BouncedAt = now;
+        BounceCode = code.Length > 16 ? code[..16] : code;
+        BounceReason = reason is { Length: > 300 } ? reason[..300] : reason;
+        return true;
     }
 
     public void MarkFailed(string code, string? message, DateTimeOffset now)

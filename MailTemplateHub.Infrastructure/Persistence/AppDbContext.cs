@@ -23,6 +23,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EmailSendRecipient> EmailSendRecipients => Set<EmailSendRecipient>();
     public DbSet<EmailSendAttachment> EmailSendAttachments => Set<EmailSendAttachment>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<BrandKit> BrandKits => Set<BrandKit>();
+    public DbSet<TrackedLink> TrackedLinks => Set<TrackedLink>();
+    public DbSet<LinkClick> LinkClicks => Set<LinkClick>();
+    public DbSet<ProcessedInboxNotice> ProcessedInboxNotices => Set<ProcessedInboxNotice>();
 
     public async Task<IAsyncDisposable> AcquireAdvisoryLockAsync(long key, CancellationToken cancellationToken)
     {

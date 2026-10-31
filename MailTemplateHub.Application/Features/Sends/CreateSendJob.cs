@@ -28,6 +28,7 @@ public sealed partial class CreateSendJobHandler(
     IAuditWriter audit,
     InboxHandler inbox,
     IOptions<SendLimitsOptions> limitsOptions,
+    IOptions<TrackingOptions> trackingOptions,
     IClock clock)
 {
     public async Task<SendJobDto> HandleAsync(CreateSendCommand command, CancellationToken ct)
@@ -45,6 +46,7 @@ public sealed partial class CreateSendJobHandler(
         }
 
         ValidateSchedule(command.ScheduledAt, limits);
+        var utmCampaign = ValidateTracking(command);
 
         var account = await db.ConnectedEmailAccounts
             .FirstOrDefaultAsync(a => a.Id == command.ConnectedEmailAccountId && a.UserId == currentUser.UserId, ct)
@@ -97,12 +99,14 @@ public sealed partial class CreateSendJobHandler(
             ReplyToThreadId = replyTo?.ThreadId,
             ReplyToInternetMessageId = replyTo?.InternetMessageId,
             ReplyToReferences = BuildReferences(replyTo),
+            TrackClicks = command.TrackClicks,
+            UtmCampaign = utmCampaign,
         };
         db.EmailSendJobs.Add(job);
 
         audit.Add(scheduled ? AuditActions.SendScheduled : AuditActions.SendCreated,
             currentUser.UserId, "email_send_job", job.Id,
-            new { recipients = job.Recipients.Count, scheduled, isReply = replyTo is not null });
+            new { recipients = job.Recipients.Count, scheduled, isReply = replyTo is not null, trackClicks = job.TrackClicks });
         await db.SaveChangesAsync(ct);
 
         if (!scheduled) jobs.EnqueueSend(job.Id);
@@ -167,6 +171,24 @@ public sealed partial class CreateSendJobHandler(
                 throw new ValidationFailure("recipients", $"Duplicate recipient '{recipient.Email}'.");
             }
         }
+    }
+
+    /// <summary>Returns the normalized UTM campaign, or null.</summary>
+    private string? ValidateTracking(CreateSendCommand command)
+    {
+        if (command.TrackClicks && !trackingOptions.Value.IsConfigured)
+        {
+            throw new TrackingUnavailableException();
+        }
+
+        var campaign = command.UtmCampaign?.Trim();
+        if (string.IsNullOrEmpty(campaign)) return null;
+        if (campaign.Length > 100 || !UtmCampaignRegex().IsMatch(campaign))
+        {
+            throw new ValidationFailure("utmCampaign",
+                "Use up to 100 letters, digits, spaces, dots, dashes or underscores.");
+        }
+        return campaign;
     }
 
     private void ValidateSchedule(DateTimeOffset? scheduledAt, SendLimitsOptions limits)
@@ -306,7 +328,14 @@ public sealed partial class CreateSendJobHandler(
 
     [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
     private static partial Regex EmailRegex();
+
+    [GeneratedRegex(@"^[\p{L}\p{N} ._-]+$")]
+    private static partial Regex UtmCampaignRegex();
 }
+
+/// <summary>Click tracking needs a public origin recipients can reach (spec 14 F4.1).</summary>
+public sealed class TrackingUnavailableException() : AppException("tracking.unavailable",
+    "Click tracking needs a public address for links. Set Tracking:PublicBaseUrl once the app is deployed.");
 
 public sealed class MissingRecipientVariablesException(IReadOnlyList<object> perRecipient)
     : AppException("send.variables_missing", "Some recipients are missing required variables.")

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using MailTemplateHub.Application.Abstractions.Ai;
@@ -25,15 +26,36 @@ internal sealed partial class ScaffoldTemplateGenerator : IAiTemplateGenerator
                 Subject(request.Prompt), request.CurrentHtml, [], Preheader(request.Prompt)));
         }
 
-        var accent = Sanitize(request.BrandColor) ?? "#2563eb";
+        // A brand kit supplies exact values; without one, derive a palette from the accent.
+        var brand = request.Brand;
+        var accent = brand?.Primary ?? Sanitize(request.BrandColor) ?? "#2563eb";
         var hero = Darken(accent, 0.45);
-        var tint = Lighten(accent, 0.92);
+        var tint = brand?.Background ?? Lighten(accent, 0.92);
+        var page = brand?.Background ?? "#f4f4f5";
+        var surface = brand?.Surface ?? "#ffffff";
+        var textColor = brand?.Text ?? "#374151";
+        var mutedColor = brand?.Muted ?? "#6b7280";
+        var headingFont = brand is null ? "" : $" font-family=\"{brand.HeadingFontStack}\"";
+        var bodyFont = brand is null ? "" : $" font-family=\"{brand.BodyFontStack}\"";
+        var button = brand is { ButtonStyle: "outline" }
+            ? $"background-color=\"transparent\" color=\"{accent}\" border=\"2px solid {accent}\" border-radius=\"{brand.ButtonRadius}px\""
+            : $"background-color=\"{accent}\" border-radius=\"{(brand is null ? "999" : brand.ButtonRadius.ToString(CultureInfo.InvariantCulture))}px\"";
+        var logoUrl = request.HeaderLogoUrl ?? brand?.LogoUrl;
         var heroImage = request.BackgroundImageUrl ?? request.AssetUrls.FirstOrDefault();
         var headline = Headline(request.Prompt);
         var body = Body(request.Prompt);
 
         var mjml = new StringBuilder();
-        mjml.AppendLine("<mjml><mj-body background-color=\"#f4f4f5\">");
+        mjml.AppendLine($"<mjml><mj-body background-color=\"{page}\">");
+
+        if (logoUrl is not null)
+        {
+            mjml.AppendLine($"  <mj-section background-color=\"{surface}\" padding=\"20px 24px 12px\">");
+            mjml.AppendLine("    <mj-column>");
+            mjml.AppendLine($"      <mj-image src=\"{logoUrl}\" alt=\"{HtmlEncode(brand?.Name ?? "Logo")}\" width=\"120px\" padding=\"0\" />");
+            mjml.AppendLine("    </mj-column>");
+            mjml.AppendLine("  </mj-section>");
+        }
 
         // Hero band: a photographic background when an asset is available, otherwise
         // a solid dark-accent band — either way it reads as a designed header, not a
@@ -47,16 +69,16 @@ internal sealed partial class ScaffoldTemplateGenerator : IAiTemplateGenerator
             mjml.AppendLine($"  <mj-section background-color=\"{hero}\" padding=\"56px 24px\">");
         }
         mjml.AppendLine("    <mj-column>");
-        mjml.AppendLine($"      <mj-text align=\"center\" font-size=\"30px\" font-weight=\"800\" line-height=\"1.25\" color=\"#ffffff\">Hi {{{{firstName}}}}, {headline}</mj-text>");
+        mjml.AppendLine($"      <mj-text align=\"center\" font-size=\"30px\" font-weight=\"800\" line-height=\"1.25\" color=\"#ffffff\"{headingFont}>Hi {{{{firstName}}}}, {headline}</mj-text>");
         mjml.AppendLine("    </mj-column>");
         mjml.AppendLine("  </mj-section>");
 
         // Body card.
-        mjml.AppendLine("  <mj-section background-color=\"#ffffff\" padding=\"32px 24px\">");
+        mjml.AppendLine($"  <mj-section background-color=\"{surface}\" padding=\"32px 24px\">");
         mjml.AppendLine("    <mj-column>");
-        mjml.AppendLine($"      <mj-text font-size=\"15px\" line-height=\"1.6\" color=\"#374151\">{body}</mj-text>");
+        mjml.AppendLine($"      <mj-text font-size=\"15px\" line-height=\"1.6\" color=\"{textColor}\"{bodyFont}>{body}</mj-text>");
         mjml.AppendLine("      <mj-spacer height=\"8px\" />");
-        mjml.AppendLine($"      <mj-button background-color=\"{accent}\" border-radius=\"999px\" font-weight=\"700\" href=\"{{{{ctaUrl}}}}\" padding=\"24px 0 8px\" inner-padding=\"16px 34px\">{{{{ctaLabel}}}}</mj-button>");
+        mjml.AppendLine($"      <mj-button {button} font-weight=\"700\"{bodyFont} href=\"{{{{ctaUrl}}}}\" padding=\"24px 0 8px\" inner-padding=\"16px 34px\">{{{{ctaLabel}}}}</mj-button>");
         mjml.AppendLine("    </mj-column>");
         mjml.AppendLine("  </mj-section>");
 
@@ -64,7 +86,7 @@ internal sealed partial class ScaffoldTemplateGenerator : IAiTemplateGenerator
 
         mjml.AppendLine($"  <mj-section background-color=\"{tint}\" padding=\"16px\">");
         mjml.AppendLine("    <mj-column>");
-        mjml.AppendLine("      <mj-text align=\"center\" font-size=\"12px\" color=\"#6b7280\">Sent with Mail Template Hub</mj-text>");
+        mjml.AppendLine($"      <mj-text align=\"center\" font-size=\"12px\" color=\"{mutedColor}\"{bodyFont}>Sent with Mail Template Hub</mj-text>");
         mjml.AppendLine("    </mj-column>");
         mjml.AppendLine("  </mj-section>");
         mjml.AppendLine("</mj-body></mjml>");

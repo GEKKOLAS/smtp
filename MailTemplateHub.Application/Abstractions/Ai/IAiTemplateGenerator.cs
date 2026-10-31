@@ -16,7 +16,27 @@ public sealed record AiTemplateRequest(
     string? CurrentHtml = null,
     string? BackgroundImageUrl = null,
     string? HeaderLogoUrl = null,
-    string? FooterLogoUrl = null);
+    string? FooterLogoUrl = null,
+    // A brand kit replaces the single BrandColor guess with exact values (spec 14 F1).
+    AiBrandKit? Brand = null);
+
+/// <summary>A brand kit flattened for prompting: literal values to use, not suggestions.</summary>
+public sealed record AiBrandKit(
+    string Name,
+    string Primary,
+    string Secondary,
+    string Background,
+    string Surface,
+    string Text,
+    string Muted,
+    string Link,
+    string HeadingFontStack,
+    string BodyFontStack,
+    string? LogoUrl,
+    int ButtonRadius,
+    string ButtonStyle,
+    int CardRadius,
+    string? Voice);
 
 public sealed record AiVariable(string Name, string Type, string Sample);
 

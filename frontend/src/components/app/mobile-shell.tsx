@@ -19,12 +19,14 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
+  BarChart3,
   ChevronDown,
   Image as ImageIcon,
   Inbox,
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
+  Palette,
   PenSquare,
   Plug,
   ScrollText,
@@ -46,7 +48,9 @@ const TABS: { href: string; label: string; icon: LucideIcon }[] = [
 
 const MENU: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/assets", label: "Assets", icon: ImageIcon },
+  { href: "/brand", label: "Brand", icon: Palette },
   { href: "/accounts", label: "Accounts", icon: Plug },
   { href: "/audit", label: "Audit log", icon: ScrollText },
   { href: "/settings", label: "Settings", icon: Settings },

@@ -121,6 +121,9 @@ public class TemplatesTests(ApiFactory factory) : IClassFixture<ApiFactory>
 
         var versions = await (await session.GetAsync($"/api/v1/templates/{id}/versions")).Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(2, versions.GetProperty("totalCount").GetInt32());
+        // Versions carry their real save time (they used to come back as 0001-01-01).
+        Assert.All(versions.GetProperty("items").EnumerateArray(), v =>
+            Assert.True(DateTimeOffset.UtcNow - v.GetProperty("createdAt").GetDateTimeOffset() < TimeSpan.FromMinutes(5)));
 
         var template = await (await session.GetAsync($"/api/v1/templates/{id}")).Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(2, template.GetProperty("currentVersion").GetProperty("versionNumber").GetInt32());

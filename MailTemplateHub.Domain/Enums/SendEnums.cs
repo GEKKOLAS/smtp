@@ -19,6 +19,9 @@ public enum RecipientStatus
     Sent,
     Failed,
     Cancelled,
+
+    /// <summary>Accepted by the provider, then returned by the receiving server (spec 14 F4.3).</summary>
+    Bounced,
 }
 
 public enum SendAttachmentDisposition

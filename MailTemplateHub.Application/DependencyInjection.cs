@@ -1,15 +1,18 @@
 using FluentValidation;
 using MailTemplateHub.Application.Features.Accounts;
 using MailTemplateHub.Application.Features.Ai;
+using MailTemplateHub.Application.Features.Analytics;
 using MailTemplateHub.Application.Features.ApiKeys;
 using MailTemplateHub.Application.Features.Assets;
 using MailTemplateHub.Application.Features.Audit;
 using MailTemplateHub.Application.Features.Auth;
+using MailTemplateHub.Application.Features.BrandKits;
 using MailTemplateHub.Application.Features.Inbox;
 using MailTemplateHub.Application.Features.Me;
 using MailTemplateHub.Application.Features.Rendering;
 using MailTemplateHub.Application.Features.Sends;
 using MailTemplateHub.Application.Features.Templates;
+using MailTemplateHub.Application.Features.Tracking;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MailTemplateHub.Application;
@@ -42,7 +45,11 @@ public static class DependencyInjection
         services.AddScoped<AuditLogsHandler>();
         services.AddScoped<GenerateTemplateHandler>();
         services.AddScoped<GenerateImageHandler>();
+        services.AddScoped<RewriteCopyHandler>();
         services.AddScoped<ApiKeysHandler>();
+        services.AddScoped<BrandKitsHandler>();
+        services.AddScoped<TrackingHandler>();
+        services.AddScoped<AnalyticsHandler>();
 
         return services;
     }

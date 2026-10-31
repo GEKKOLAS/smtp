@@ -82,10 +82,14 @@ public static class DependencyInjection
             services.AddHttpClient<AnthropicTemplateGenerator>(client =>
                 client.Timeout = TimeSpan.FromSeconds(60));
             services.AddScoped<IAiTemplateGenerator>(sp => sp.GetRequiredService<AnthropicTemplateGenerator>());
+            services.AddHttpClient<AnthropicCopyWriter>(client =>
+                client.Timeout = TimeSpan.FromSeconds(45));
+            services.AddScoped<IAiCopyWriter>(sp => sp.GetRequiredService<AnthropicCopyWriter>());
         }
         else
         {
             services.AddScoped<IAiTemplateGenerator, ScaffoldTemplateGenerator>();
+            services.AddScoped<IAiCopyWriter, DisabledCopyWriter>();
         }
 
         // Image generation (OpenAI gpt-image-1) when a key is set; disabled otherwise.
@@ -129,6 +133,7 @@ public static class DependencyInjection
     private static void AddSending(IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<SendLimitsOptions>().BindConfiguration(SendLimitsOptions.SectionName);
+        services.AddOptions<TrackingOptions>().BindConfiguration(TrackingOptions.SectionName);
         services.AddOptions<ProviderSendOptions>().BindConfiguration(ProviderSendOptions.SectionName);
 
         services.AddSingleton<IEmailMessageBuilder, MimeKitEmailMessageBuilder>();
@@ -147,6 +152,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailSendService, EmailSendService>();
         services.AddScoped<SendEmailJob>();
         services.AddScoped<PromoteScheduledSendsJob>();
+        services.AddScoped<DetectBouncesJob>();
         services.AddScoped<RefreshTokensJob>();
         services.AddScoped<CleanupJob>();
 

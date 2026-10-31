@@ -86,6 +86,7 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("render", context => Fixed(context, o => o.Render));
     options.AddPolicy("send", context => Fixed(context, o => o.Send));
     options.AddPolicy("ai", context => Fixed(context, o => o.Ai));
+    options.AddPolicy("tracking", context => Fixed(context, o => o.Tracking));
 });
 
 var otlpEndpoint = builder.Configuration["OpenTelemetry:OtlpEndpoint"];
@@ -147,6 +148,8 @@ if (jobsRunInProcess)
         "refresh-tokens", job => job.RunAsync(CancellationToken.None), "0 * * * *");
     recurring.AddOrUpdate<CleanupJob>(
         "cleanup", job => job.RunAsync(CancellationToken.None), "0 3 * * *");
+    recurring.AddOrUpdate<DetectBouncesJob>(
+        "detect-bounces", job => job.RunAsync(CancellationToken.None), "*/15 * * * *");
 }
 
 await app.RunAsync();

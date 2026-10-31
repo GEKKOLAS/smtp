@@ -40,6 +40,43 @@ public class AiGenerationTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Generate_uses_the_chosen_brand_kit_and_rejects_foreign_kits()
+    {
+        var owner = await RegisteredSessionAsync();
+        var kitResponse = await owner.PostAsync("/api/v1/brand-kits", new
+        {
+            name = "Acme",
+            colors = new
+            {
+                primary = "#C2410C", secondary = "#00CEC9", background = "#FFF4E6", surface = "#FFFFFF",
+                text = "#17151F", muted = "#6B6878", link = "#4B2FD6",
+            },
+            headingFont = "georgia",
+            bodyFont = "verdana",
+            button = new { radius = 4, style = "filled" },
+            radius = new { small = 4, medium = 8, large = 16 },
+            spacing = new { small = 8, medium = 16, large = 24 },
+        });
+        kitResponse.EnsureSuccessStatusCode();
+        var kitId = (await kitResponse.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetString();
+
+        var response = await owner.PostAsync("/api/v1/ai/templates/generate",
+            new { prompt = "Spring menu launch", brandColor = "#0ea5e9", brandKitId = kitId });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var mjml = (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("mjmlSource").GetString()!;
+        Assert.Contains("#C2410C", mjml);
+        Assert.Contains("#FFF4E6", mjml);
+        Assert.Contains("Georgia", mjml);
+        Assert.DoesNotContain("#0ea5e9", mjml);
+
+        var intruder = await RegisteredSessionAsync();
+        var foreign = await intruder.PostAsync("/api/v1/ai/templates/generate",
+            new { prompt = "Spring menu launch", brandKitId = kitId });
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+    }
+
+    [Fact]
     public async Task Generated_content_can_be_saved_as_a_template()
     {
         var session = await RegisteredSessionAsync();

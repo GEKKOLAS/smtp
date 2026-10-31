@@ -1,4 +1,5 @@
 import { api } from "@/lib/api/client";
+import { z } from "zod";
 import {
   pagedSendsSchema,
   type SendJob,
@@ -25,10 +26,21 @@ export interface CreateSendInput {
   /** Provider message id to answer; puts the send in that conversation. */
   replyToMessageId?: string | null;
   subjectOverride?: string | null;
+  /** Rewrites links through the click redirect; needs a public base URL on the server. */
+  trackClicks?: boolean;
+  /** Adds utm_source/utm_medium/utm_campaign to links. */
+  utmCampaign?: string | null;
 }
 
 export function createSend(input: CreateSendInput): Promise<SendJob> {
   return api("/sends", { body: input, schema: sendJobSchema });
+}
+
+const trackingStatusSchema = z.object({ clickTracking: z.boolean() });
+
+/** Whether the server can track clicks (it has a public address for links). */
+export function getTrackingStatus(): Promise<boolean> {
+  return api("/tracking/status", { schema: trackingStatusSchema }).then((r) => r.clickTracking);
 }
 
 export function testSend(input: {

@@ -11,6 +11,7 @@ export const recipientCountsSchema = z.object({
   sent: z.number(),
   failed: z.number(),
   cancelled: z.number(),
+  bounced: z.number().default(0),
 });
 
 export const sendJobSchema = z.object({
@@ -27,6 +28,8 @@ export const sendJobSchema = z.object({
   failureCode: z.string().nullable(),
   isReply: z.boolean(),
   replyToMessageId: z.string().nullable(),
+  trackClicks: z.boolean().default(false),
+  utmCampaign: z.string().nullable().default(null),
 });
 export type SendJob = z.infer<typeof sendJobSchema>;
 
@@ -34,12 +37,15 @@ export const recipientSchema = z.object({
   id: z.string(),
   email: z.string(),
   displayName: z.string().nullable(),
-  status: z.enum(["pending", "sending", "sent", "failed", "cancelled"]),
+  status: z.enum(["pending", "sending", "sent", "failed", "cancelled", "bounced"]),
   attemptCount: z.number(),
   providerMessageId: z.string().nullable(),
   failureCode: z.string().nullable(),
   failureMessage: z.string().nullable(),
   nextAttemptAt: z.string().nullable(),
+  bouncedAt: z.string().nullable().default(null),
+  bounceCode: z.string().nullable().default(null),
+  bounceReason: z.string().nullable().default(null),
 });
 
 export const providerEventSchema = z.object({

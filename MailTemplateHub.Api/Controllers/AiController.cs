@@ -23,7 +23,8 @@ public sealed class AiController(GenerateTemplateHandler handler) : ControllerBa
         string? CurrentHtml = null,
         Guid? BackgroundImageAssetId = null,
         Guid? HeaderLogoAssetId = null,
-        Guid? FooterLogoAssetId = null);
+        Guid? FooterLogoAssetId = null,
+        Guid? BrandKitId = null);
 
     /// <summary>
     /// Generates an MJML template from a prompt (returns content + preview, no persist).
@@ -39,7 +40,8 @@ public sealed class AiController(GenerateTemplateHandler handler) : ControllerBa
                 request.Prompt, request.BrandColor, request.Tone,
                 request.AssetIds ?? [], request.Variables ?? [], request.VideoUrl,
                 request.UseAdvancedModel, request.CurrentMjml, request.CurrentHtml,
-                request.BackgroundImageAssetId, request.HeaderLogoAssetId, request.FooterLogoAssetId),
+                request.BackgroundImageAssetId, request.HeaderLogoAssetId, request.FooterLogoAssetId,
+                request.BrandKitId),
             ct));
 
     public sealed record GenerateImageRequest(string Prompt, string? Size);
@@ -51,8 +53,22 @@ public sealed class AiController(GenerateTemplateHandler handler) : ControllerBa
         GenerateImageRequest request, [FromServices] GenerateImageHandler imageHandler, CancellationToken ct)
         => Ok(await imageHandler.HandleAsync(new GenerateImageCommand(request.Prompt, request.Size), ct));
 
+    public sealed record CopyVariationsRequest(
+        string Kind, string Text, string Tone, int? Count, Guid? BrandKitId, string? Context);
+
+    /// <summary>Tone-based rewrites of a subject, preheader, text block or CTA.</summary>
+    [HttpPost("copy/variations")]
+    [EnableRateLimiting("ai")]
+    public async Task<IActionResult> CopyVariations(
+        CopyVariationsRequest request, [FromServices] RewriteCopyHandler copyHandler, CancellationToken ct)
+        => Ok(await copyHandler.HandleAsync(
+            new RewriteCopyCommand(request.Kind, request.Text, request.Tone, request.Count, request.BrandKitId,
+                request.Context),
+            ct));
+
     /// <summary>Which optional AI features are configured, so the UI can show/hide them.</summary>
     [HttpGet("capabilities")]
-    public IActionResult Capabilities([FromServices] IAiImageGenerator imageGenerator)
-        => Ok(new { imageGeneration = imageGenerator.IsConfigured });
+    public IActionResult Capabilities(
+        [FromServices] IAiImageGenerator imageGenerator, [FromServices] IAiCopyWriter copyWriter)
+        => Ok(new { imageGeneration = imageGenerator.IsConfigured, copyAssistant = copyWriter.IsConfigured });
 }

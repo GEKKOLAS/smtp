@@ -20,7 +20,9 @@ public sealed class SendsController : ControllerBase
         // Set to answer a message in the sending account's mailbox; recipients
         // then default to the original sender and the send joins that thread.
         string? ReplyToMessageId,
-        string? SubjectOverride);
+        string? SubjectOverride,
+        bool TrackClicks = false,
+        string? UtmCampaign = null);
 
     public sealed record TestSendRequest(
         Guid ConnectedEmailAccountId,
@@ -44,7 +46,9 @@ public sealed class SendsController : ControllerBase
             request.ScheduledAt,
             Request.Headers.TryGetValue("Idempotency-Key", out var key) ? key.ToString() : null,
             request.ReplyToMessageId,
-            request.SubjectOverride);
+            request.SubjectOverride,
+            request.TrackClicks,
+            request.UtmCampaign);
         return Accepted(await handler.HandleAsync(command, ct));
     }
 

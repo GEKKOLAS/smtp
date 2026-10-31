@@ -45,9 +45,28 @@ public sealed class FakeInboxClient : IInboxProviderClient
         return Task.FromResult(message);
     }
 
+    /// <summary>Delivery reports by message id, as raw RFC 5322 bytes.</summary>
+    public Dictionary<string, byte[]> Notices { get; } = [];
+
+    public Task<IReadOnlyList<string>> FindDeliveryNotificationsAsync(
+        ConnectedAccountContext account, int max, CancellationToken ct)
+    {
+        if (Failure is not null) throw Failure();
+        return Task.FromResult<IReadOnlyList<string>>(Notices.Keys.Take(max).ToList());
+    }
+
+    public Task<byte[]> GetRawMessageAsync(ConnectedAccountContext account, string messageId, CancellationToken ct)
+    {
+        if (Failure is not null) throw Failure();
+        return Notices.TryGetValue(messageId, out var raw)
+            ? Task.FromResult(raw)
+            : throw new ProviderSendException(ProviderErrorKind.PermanentOther, "The message was not found.");
+    }
+
     public void Reset()
     {
         Messages.Clear();
+        Notices.Clear();
         NextPageToken = null;
         Failure = null;
     }

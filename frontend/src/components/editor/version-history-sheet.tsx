@@ -12,7 +12,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { VersionCompareDialog } from "@/components/editor/version-compare-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { GitCompare } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +32,7 @@ export function VersionHistorySheet({
 }) {
   const queryClient = useQueryClient();
   const [innerOpen, setInnerOpen] = useState(false);
+  const [compare, setCompare] = useState<{ before: string; after: string } | null>(null);
   const controlled = controlledOpen !== undefined;
   const open = controlled ? controlledOpen : innerOpen;
   const setOpen = (next: boolean) => (controlled ? onOpenChange?.(next) : setInnerOpen(next));
@@ -52,7 +55,15 @@ export function VersionHistorySheet({
     onError: () => toast.error("Could not restore this version"),
   });
 
+  // Versions are listed newest first.
+  const latest = data?.items[0];
+  const openCompare = (before: string, after: string) => {
+    setOpen(false);
+    setCompare({ before, after });
+  };
+
   return (
+    <>
     <Sheet open={open} onOpenChange={setOpen}>
       {!controlled && (
         <SheetTrigger asChild>
@@ -62,7 +73,18 @@ export function VersionHistorySheet({
       <SheetContent className="sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>Version history</SheetTitle>
-          <SheetDescription>Restore a previous version as a new version.</SheetDescription>
+          <SheetDescription>Compare any version with the latest, or restore it as a new version.</SheetDescription>
+          {data && data.items.length > 1 && latest && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2 self-start"
+              onClick={() => openCompare(data.items[1].id, latest.id)}
+            >
+              <GitCompare />
+              Compare latest two
+            </Button>
+          )}
         </SheetHeader>
         <ul className="divide-y px-4">
           {data?.items.map((version) => (
@@ -73,14 +95,21 @@ export function VersionHistorySheet({
                   {version.editorKind} · {formatDate(version.createdAt)}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={restore.isPending}
-                onClick={() => restore.mutate(version.id)}
-              >
-                Restore
-              </Button>
+              <div className="flex shrink-0 gap-1.5">
+                {latest && version.id !== latest.id && (
+                  <Button variant="ghost" size="sm" onClick={() => openCompare(version.id, latest.id)}>
+                    Compare
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={restore.isPending}
+                  onClick={() => restore.mutate(version.id)}
+                >
+                  Restore
+                </Button>
+              </div>
             </li>
           ))}
           {data && data.items.length === 0 && (
@@ -89,5 +118,18 @@ export function VersionHistorySheet({
         </ul>
       </SheetContent>
     </Sheet>
+    {compare && (
+      <VersionCompareDialog
+        templateId={templateId}
+        initialBefore={compare.before}
+        initialAfter={compare.after}
+        onClose={() => setCompare(null)}
+        onRestored={() => {
+          setCompare(null);
+          onRestored();
+        }}
+      />
+    )}
+    </>
   );
 }
